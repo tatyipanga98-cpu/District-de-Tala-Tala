@@ -33,9 +33,18 @@
 
   /* ---------- Éléments communs ---------- */
   function chip(text, kind) { return h("span", { class: "chip " + (kind || ""), text: text }); }
+  var STATUS_ICON = { draft: "↻", submitted: "➜", needs_correction: "!", in_control: "⏱", checked: "◎", validated: "✓" };
   function statusChip(s) {
     var kind = { draft: "", submitted: "info", needs_correction: "warn", in_control: "info", checked: "info", validated: "good" }[s] || "";
-    return chip(TT.STATUS[s] || s, kind);
+    return h("span", { class: "chip ico " + kind }, h("span", { "aria-hidden": "true", text: STATUS_ICON[s] || "" }), " " + (TT.STATUS[s] || s));
+  }
+  /* ---------- États vides : pictogramme, titre, explication et action secondaire ---------- */
+  function emptyState(icon, title, text, action) {
+    return h("div", { class: "empty-state" },
+      h("span", { class: "es-ico", "aria-hidden": "true", text: icon }),
+      h("h3", { text: title }),
+      text ? h("p", { class: "muted", text: text }) : null,
+      action || null);
   }
   function syncChip(r) {
     if (!r._sync) return null;
@@ -231,28 +240,99 @@
     return "Bonjour, " + (isCommunity() ? name.split(/\s+/)[0] : name) + ".";
   }
   function typeLabelOf(r) { var t = D.type(r.activity_type_id); return t ? t.label : ""; }
-  function dateLong(iso) { return TT.fmtDate(iso); }
-  function serviceCard() {
-    if (!isCommunity() || !window.TTSchedule) return null;
-    var info = TTSchedule.lastSlot(new Date());
-    if (!info) return null;
+  function dayMonth(iso) {
+    var p = (iso || "").slice(0, 10).split("-");
+    return p.length === 3 ? (+p[2]) + " " + TT.MONTHS[(+p[1]) - 1] : "";
+  }
+  function nounCommunities(n) { return n + " communauté" + (n > 1 ? "s" : ""); }
+
+  /* Premier bloc : l'état de la semaine (rapporteur). */
+  function weekBlock(info) {
     var mine = D.viewReports().filter(function (r) { return TTSchedule.matches(r, info, typeLabelOf); });
     var sent = mine.filter(function (r) { return r.status !== "draft" && r.status !== "needs_correction"; })[0];
     var draft = mine.filter(function (r) { return r.status === "draft" || r.status === "needs_correction"; })[0];
     var late = TTSchedule.isLate(info, new Date());
-    var what = "Service divin du " + info.day + " " + dateLong(info.date);
-    if (sent) return h("section", { class: "card service ok" }, h("h3", { text: what }), h("p", { text: "Le rapport est transmis. Merci." }));
+    var what = "Service divin du " + info.day + " " + dayMonth(info.date);
+    if (sent) {
+      return h("section", { class: "card service ok" }, h("h3", { text: what }), h("p", { text: "Le rapport est transmis. Merci." }));
+    }
     var types = D.types.filter(function (x) { return x.active && /^service divin ordinaire/i.test(x.label); });
-    var go2 = function () {
+    var action = function () {
       if (draft) go("form", draft._local ? { qid: draft._qid } : { id: draft.id });
       else go("form", { presetDate: info.date, presetType: types[0] && types[0].id });
     };
+    var deadline = late
+      ? "L'échéance (" + info.deadlineLabel + ") est passée. Transmettez-le dès que possible."
+      : "À transmettre avant " + info.deadlineLabel + ".";
+    var lines = draft
+      ? [h("p", { text: "Votre brouillon du " + dayMonth(draft.activity_date) + " n'a pas été transmis." }), h("p", { class: "muted", text: deadline })]
+      : [h("p", { text: "Le rapport du culte n'est pas encore rédigé. " + deadline })];
     return h("section", { class: "card service" + (late ? " late" : "") },
-      h("h3", { text: what }),
-      h("p", { text: late
-        ? "Le rapport n'est pas encore transmis et l'échéance (" + info.deadlineLabel + ") est passée. Transmettez-le dès que possible."
-        : "Le rapport n'est pas encore transmis. À transmettre avant " + info.deadlineLabel + "." }),
-      h("button", { class: "btn primary", type: "button", onclick: go2, text: draft ? "Continuer le brouillon" : "Rédiger le rapport" }));
+      h("h3", { text: what }), lines,
+      h("button", { class: "btn primary", type: "button", onclick: action, text: draft ? "Continuer le brouillon" : "Rédiger le rapport" }));
+  }
+
+  /* Deuxième bloc : tableau de bord des communautés (commission et administrateur). */
+  function districtBlock(info) {
+    var comms = D.communities.filter(function (c) { return c.active !== false; });
+    var reps = D.viewReports().filter(function (r) { return TTSchedule.matches(r, info, typeLabelOf); });
+    var sentIds = {};
+    reps.forEach(function (r) { if (r.status !== "draft") sentIds[r.community_id] = true; });
+    var missing = comms.filter(function (c) { return !sentIds[c.id]; });
+    var x = comms.length - missing.length;
+    var many = comms.length > 1;
+    var msg = x + " sur " + comms.length + (many ? " communautés ont transmis" : " communauté a transmis") + " le dernier service. " +
+      (missing.length ? "Il manque " + nounCommunities(missing.length) + "." : "Toutes les communautés ont transmis.");
+    return h("section", { class: "card service" + (missing.length ? "" : " ok") },
+      h("h3", { text: "Service divin du " + info.day + " " + dayMonth(info.date) }),
+      h("p", { text: msg }),
+      missing.length ? h("p", { class: "muted", text: "Pas encore transmis : " + missing.map(function (c) { return c.name; }).join(", ") + "." }) : null,
+      h("button", { class: "btn ghost", type: "button", onclick: function () { go("review", {}); }, text: "Voir les rapports" }));
+  }
+
+  /* Troisième bloc : la comptabilité du mois (toutes les personnes). */
+  function moneyBlock(st, y, m) {
+    var name = TT.MONTHS[m - 1];
+    return h("section", { class: "card" },
+      h("h3", { text: "Ce mois-ci · " + name.charAt(0).toUpperCase() + name.slice(1) + " " + y }),
+      kv("Activités validées", TT.fmtInt(st.total.n)),
+      kv("Offrandes en CDF", TT.fmtFC(st.total.fc)),
+      kv("Offrandes en USD", TT.fmtUSD(st.total.usd)));
+  }
+
+  /* ---------- Onboarding : trois écrans, une seule fois par compte ---------- */
+  var onbShown = false;
+  function onbKey() { return "tt:onb:" + (D.profile && D.profile.id || "x"); }
+  function onbDone() { try { return localStorage.getItem(onbKey()) === "1"; } catch (e) { return false; } }
+  function setOnbDone() { try { localStorage.setItem(onbKey(), "1"); } catch (e) {} }
+  function showOnboarding() {
+    var steps = [
+      { t: "Voici votre communauté", b: "Vous rédigez les rapports de " + D.communityName(D.profile.community_id) + ". Chaque activité reste sur votre appareil tant que vous ne la transmettez pas, même sans Internet." },
+      { t: "À quoi ressemble un rapport validé", b: "Une fois validé par la Commission, le rapport reçoit un numéro de fiche (TT-AAAA-NNNNNN) et ne peut plus être modifié. Pour corriger, vous créez une correction liée à cette fiche." },
+      { t: "Créez votre premier brouillon", b: "Commencez par le dernier service divin. Vous pouvez enregistrer un brouillon à tout moment et le transmettre plus tard." }
+    ];
+    var i = 0;
+    var back = h("div", { class: "overlay", role: "dialog", "aria-modal": "true", "aria-labelledby": "onb-title" });
+    function close(openForm) {
+      setOnbDone(); back.remove();
+      if (openForm) go("form", { presetDate: TT.today() });
+    }
+    function draw() {
+      var st = steps[i], last = i === steps.length - 1;
+      back.replaceChildren(h("div", { class: "dialog onb" },
+        h("p", { class: "muted", text: (i + 1) + " sur " + steps.length }),
+        h("h2", { id: "onb-title", text: st.t }),
+        h("p", { text: st.b }),
+        h("div", { class: "row end" },
+          h("button", { class: "btn ghost", type: "button", onclick: function () { close(false); }, text: "Passer" }),
+          i > 0 ? h("button", { class: "btn ghost", type: "button", onclick: function () { i--; draw(); }, text: "Précédent" }) : null,
+          last
+            ? h("button", { class: "btn primary", type: "button", onclick: function () { close(true); }, text: "Rédiger le rapport" })
+            : h("button", { class: "btn primary", type: "button", onclick: function () { i++; draw(); }, text: "Suivant" }))));
+      var first = back.querySelector(".btn.primary"); if (first) first.focus();
+    }
+    draw();
+    document.body.appendChild(back);
   }
 
   /* ---------- Accueil ---------- */
@@ -261,18 +341,14 @@
     var d = new Date(), y = d.getFullYear(), m = d.getMonth() + 1;
     var pr = S.periodRange("month", y, m);
     var st = S.compute(D.reports, { from: pr.from, to: pr.to, statuses: ["validated"] });
-    var all = S.compute(D.reports, { from: pr.from, to: pr.to, statuses: null });
     var blocks = [];
     var monthName = TT.MONTHS[m - 1];
     blocks.push(h("section", { class: "hero" },
       h("h2", { text: greeting() }),
       h("p", { class: "muted", text: TT.ROLES[role()] + (D.profile.community_id ? " · " + D.communityName(D.profile.community_id) : "") }),
-      h("p", { class: "month", text: monthName.charAt(0).toUpperCase() + monthName.slice(1) + " " + y }),
-      h("div", { class: "money" },
-        h("div", {}, h("span", { class: "lbl", text: "Activités validées" }), h("strong", { text: TT.fmtInt(st.total.n) })),
-        h("div", {}, h("span", { class: "lbl", text: "Offrandes CDF" }), h("strong", { text: TT.fmtFC(st.total.fc) })),
-        h("div", {}, h("span", { class: "lbl", text: "Offrandes USD" }), h("strong", { text: TT.fmtUSD(st.total.usd) })))));
-    var svc = serviceCard(); if (svc) blocks.push(svc);
+      h("p", { class: "month", text: monthName.charAt(0).toUpperCase() + monthName.slice(1) + " " + y })));
+    var info = window.TTSchedule ? TTSchedule.lastSlot(new Date()) : null;
+    if (info) blocks.push(isCommunity() ? weekBlock(info) : districtBlock(info));
     var pend = D.queue.length;
     if (pend) {
       var bad = D.queue.filter(function (q) { return q.state !== "pending"; }).length;
@@ -281,7 +357,7 @@
         h("p", { class: "muted", text: bad ? bad + " nécessite(nt) votre attention (erreur ou conflit)." : (D.online ? "Envoi en cours ou prêt à partir." : "Ils partiront dès le retour d'Internet.") }),
         h("div", { class: "row" },
           h("button", { class: "btn primary", type: "button", onclick: manualSync, text: "Envoyer maintenant" }),
-          h("button", { class: "btn ghost", type: "button", onclick: function () { state.listFilter = { status: "", community: "", month: "" }; go("reports", {}); }, text: "Voir" }))));
+          h("button", { class: "btn ghost", type: "button", onclick: function () { state.listFilter = { status: "", community: "", month: "" }; go("reports"); }, text: "Voir" }))));
     }
     var tiles = [];
     blocks.push(h("h3", { text: isCommunity() ? "Vos activités" : "À traiter" }));
@@ -290,8 +366,10 @@
     blocks.push(h("section", { class: "tiles" }, tiles.map(function (t) {
       return h("button", { class: "tile", type: "button", onclick: function () { go(isCommunity() ? "reports" : "review", {}); } }, h("span", { class: "num", text: String(t[1]) }), h("span", { class: "lbl", text: t[0] }));
     })));
+    blocks.push(moneyBlock(st, y, m));
     if (!D.online) blocks.push(h("p", { class: "foot", text: "Mode hors connexion : vous voyez les dernières données reçues sur cet appareil." }));
     shell(blocks);
+    if (isCommunity() && !onbShown && !onbDone()) { onbShown = true; showOnboarding(); }
   }
 
   /* ---------- Liste des activités ---------- */
@@ -345,7 +423,7 @@
     return [
       h("div", { class: "title-row" }, h("h2", { text: opts.title || "Activités" }), opts.noNew ? null : h("button", { class: "btn primary", type: "button", onclick: function () { go("form", {}); }, text: "+ Nouvelle" })),
       opts.extra || null, controls,
-      total ? h("div", { class: "list" }, rs.map(reportRow)) : h("p", { class: "empty", text: "Aucune activité à afficher." }),
+      total ? h("div", { class: "list" }, rs.map(reportRow)) : emptyState("✎", "Aucune activité à afficher", isCommunity() ? "Créez votre premier rapport, ou modifiez les filtres." : "Modifiez les filtres pour voir d'autres activités.", isCommunity() ? h("button", { class: "btn primary", type: "button", onclick: function () { go("form", {}); }, text: "Nouvelle fiche" }) : null),
       more
     ];
   }
@@ -395,7 +473,7 @@
 
   function detailScreen() {
     var r = findReport(state.params);
-    if (!r) { shell([h("p", { class: "empty", text: "Fiche introuvable." }), h("button", { class: "btn", type: "button", onclick: function () { go("reports"); }, text: "Retour" })]); return; }
+    if (!r) { shell([emptyState("?", "Fiche introuvable", "Elle n'existe plus ou n'est pas accessible avec votre compte.", h("button", { class: "btn", type: "button", onclick: function () { go("reports"); }, text: "Retour aux activités" }))]); return; }
     var t = D.type(r.activity_type_id);
     var hist = h("div", { id: "history" });
     var blocks = [
@@ -514,7 +592,7 @@
     var src = existing || copy || {};
     var editingSynced = !!(existing && existing.id);
     var lockedLocal = existing && existing._local && D.queue.find(function (x) { return x.qid === existing._qid && x.reportId; });
-    if (lockedLocal) { shell([h("p", { class: "empty", text: "Cette fiche est en cours d'envoi. Réessayez dans un instant." }), h("button", { class: "btn", type: "button", onclick: function () { go("reports"); }, text: "Retour" })]); return; }
+    if (lockedLocal) { shell([emptyState("⏱", "Envoi en cours", "Cette fiche est en cours d'envoi. Réessayez dans un instant.", h("button", { class: "btn", type: "button", onclick: function () { go("reports"); }, text: "Retour aux activités" }))]); return; }
     var types = D.types.filter(function (x) { return x.active || x.id === src.activity_type_id; });
     var commFixed = isCommunity();
 
@@ -756,7 +834,7 @@
         h("h3", { text: periodLabel }),
         res.total.n ? [table("Communauté", commRows, row("Total", res.total, true)), h("h3", { text: "Par type d'activité" }), table("Type", typeRows),
           actKeys.length ? [h("h3", { text: "Actes" }), h("div", { class: "scroll" }, h("table", {}, h("tbody", {}, actKeys.map(function (k) { return h("tr", {}, h("th", { scope: "row", text: k }), h("td", { text: TT.fmtInt(res.acts[k]) })); }))))] : null]
-          : h("p", { class: "empty", text: "Aucune fiche pour cette période avec ces critères." }),
+          : emptyState("○", "Aucune fiche pour cette période", "Choisissez une autre période ou élargissez les statuts retenus."),
         h("p", { class: "hint", text: "Chaque activité est comptée une seule fois. Les présences additionnent les effectifs de chaque service : une personne présente à deux services le même jour y figure deux fois. Les offrandes en CDF et en USD ne sont jamais additionnées entre elles." }),
         exStatus || res.excluded.superseded ? h("p", { class: "hint", text: "Non comptées : " + [exStatus, res.excluded.superseded ? res.excluded.superseded + " remplacée(s) par une correction validée" : ""].filter(Boolean).join(" ; ") + "." }) : null,
         h("div", { class: "actions" },
@@ -775,7 +853,7 @@
   var accountsCache = { rows: null, created: null };
   async function accountsScreen() {
     var box = h("div"); shell([h("div", { class: "title-row" }, h("h2", { text: "Comptes" })), box]);
-    if (!D.online) { box.appendChild(h("p", { class: "empty", text: "La gestion des comptes nécessite une connexion Internet." })); return; }
+    if (!D.online) { box.appendChild(emptyState("⚠", "Connexion nécessaire", "La gestion des comptes nécessite une connexion Internet.")); return; }
     try { accountsCache.rows = await A.select("profiles", "select=*&order=created_at.asc"); } catch (e) { box.appendChild(h("p", { class: "msg bad", text: TT.friendly(e) })); return; }
     var me = A.user().id;
     var iMail = h("input", { id: "ac-mail", type: "email", required: true, inputmode: "email" });

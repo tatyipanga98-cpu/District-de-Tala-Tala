@@ -2,11 +2,13 @@
    Lancer : NODE_PATH=$(npm root -g) node tests/v16.test.js */
 const { chromium } = require('playwright');
 const SB = 'https://kpdyowuhxekajsbnormp.supabase.co', BASE = 'http://localhost:8813/index.html';
+const navTo = async (p, label) => { await p.evaluate((l) => { const b = [...document.querySelectorAll('nav.bottom button')].find(x => x.textContent.includes(l)); b && b.click(); }, label); await p.waitForTimeout(400); };
 let bad = 0; const check = (n, ok, x = '') => { if (!ok) bad++; console.log((ok ? 'OK   ' : 'ECHEC') + ' ' + n + (x ? ' [' + x + ']' : '')); };
 const T = [{ id: 't1', label: 'Service divin ordinaire', active: true, requires_description: false }, { id: 't2', label: 'Réunion', active: true, requires_description: false }];
 async function run(b, name, role, reports, fixed) {
   const ctx = await b.newContext({ viewport: { width: 390, height: 800 }, serviceWorkers: 'block' });
   await ctx.clock.setFixedTime(new Date(fixed));
+  await ctx.addInitScript(() => { try { localStorage.setItem('tt:onb:u1', '1'); } catch (e) {} }); // onboarding déjà vu, sauf test dédié
   await ctx.addInitScript(() => localStorage.setItem('tt_session', JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_at: Math.floor(Date.now() / 1000) + 3600, user: { id: 'u1', email: 'x@y.z' } })));
   const calls = [];
   await ctx.route(SB + '/**', r => {
@@ -35,6 +37,33 @@ const rep = (id, d, t, rc, st = 'submitted') => ({ id, report_code: 'TT-2026-000
   check('formulaire prérempli : service divin ordinaire', (await p.inputValue('#fm-type')) === 't1');
   check('champ reçu territorial présent', (await p.locator('#fm-receipt').count()) === 1);
   check('aucune erreur JS (accueil)', errs.length === 0, errs.join('|')); await ctx.close();
+  // Micro-copie : brouillon non transmis daté
+  ({ ctx, p, errs } = await run(b, 'Armine Lubamba', 'community_clerk', [rep('rd', '2026-11-11', 't1', null, 'draft')], '2026-11-14T02:34:00Z'));
+  txt = await p.locator('body').innerText();
+  check('brouillon : « Votre brouillon du 11 novembre n\'a pas été transmis. »', txt.includes("Votre brouillon du 11 novembre n'a pas été transmis."), txt.slice(0, 0));
+  check('brouillon : bouton « Continuer le brouillon »', (await p.locator('button', { hasText: 'Continuer le brouillon' }).count()) === 1);
+  await navTo(p, 'Activités'); check('statuts : icône de brouillon ↻ dans la liste', (await p.locator('.chip.ico', { hasText: '↻' }).count()) >= 1);
+  await ctx.close();
+  // Onboarding : affiché une fois, trois écrans, puis mémorisé
+  { const ctx2 = await b.newContext({ viewport: { width: 390, height: 800 }, serviceWorkers: 'block' });
+    await ctx2.clock.setFixedTime(new Date('2026-11-14T02:34:00Z'));
+    await ctx2.addInitScript(() => localStorage.setItem('tt_session', JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_at: Math.floor(Date.now() / 1000) + 3600, user: { id: 'u1', email: 'x@y.z' } })));
+    await ctx2.route(SB + '/**', r => { const u = r.request().url(); let body = [];
+      if (u.includes('/auth/v1/user')) body = { id: 'u1' };
+      else if (u.includes('/profiles')) body = [{ id: 'u1', display_name: 'Exaucé KANOWA', role: 'community_clerk', community_id: 'c1', active: true, must_change_password: false }];
+      else if (u.includes('/communities')) body = [{ id: 'c1', name: 'Source de vie', active: true }];
+      else if (u.includes('/activity_types')) body = T;
+      r.fulfill({ status: 200, contentType: 'application/json', headers: { 'content-range': '0-0/*' }, body: JSON.stringify(body) }); });
+    const p2 = await ctx2.newPage(); await p2.goto(BASE); await p2.waitForTimeout(1200);
+    check('onboarding : premier écran affiché', (await p2.locator('.dialog.onb h2').innerText()) === 'Voici votre communauté');
+    await p2.locator('.dialog.onb button', { hasText: 'Suivant' }).click(); await p2.locator('.dialog.onb button', { hasText: 'Suivant' }).click();
+    check('onboarding : troisième écran', (await p2.locator('.dialog.onb h2').innerText()) === 'Créez votre premier brouillon');
+    await p2.locator('.dialog.onb button', { hasText: 'Rédiger le rapport' }).click(); await p2.waitForTimeout(400);
+    check('onboarding : terminé ouvre le formulaire', (await p2.locator('#fm-date').count()) === 1);
+    const flag = await p2.evaluate(() => localStorage.getItem('tt:onb:u1'));
+    check('onboarding : mémorisé une seule fois', flag === '1');
+    await ctx2.close(); }
+
   // Rapport déjà transmis pour le mercredi -> message de remerciement
   ({ ctx, p } = await run(b, 'Exaucé KANOWA', 'community_clerk', [rep('r1', '2026-11-11', 't1')], '2026-11-14T02:34:00Z'));
   txt = await p.locator('body').innerText();

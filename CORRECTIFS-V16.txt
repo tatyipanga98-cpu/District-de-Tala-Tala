@@ -54,3 +54,14 @@ CORRECTIFS — PASSE 1
 1.5  Contraste : séparateurs (clair #8c8676, sombre #5f668a) à 3:1 minimum ; anneau de focus à 6:1 (clair) et 8:1 (sombre) ;
      bouton « danger » en mode sombre : texte blanc sur #a3121f (2:1 auparavant). Rouge de texte en mode sombre conservé (6.4:1).
      Lighthouse n'a pas pu être exécuté ici : mesure à faire sur le site déployé.
+
+CORRECTIFS — PASSE 2 (expérience utilisateur)
+2.1  Accueil en trois blocs distincts : état de la semaine (rapporteur) ou tableau de bord des communautés (commission,
+     administrateur), file d'attente, puis « Ce mois-ci » (comptabilité). Un seul bouton d'action sur l'accueil.
+2.2  Statuts avec icônes : ↻ brouillon, ➜ transmis, ! à corriger, ⏱ en contrôle, ◎ contrôlé, ✓ validé (libellé conservé).
+2.3  Micro-copies : « Votre brouillon du 11 novembre n'a pas été transmis. » ; « 5 sur 8 communautés ont transmis le dernier
+     service. Il manque 3 communautés. » (avec la liste des communautés manquantes).
+     NON REPRIS : « sera clôturé dimanche à 23h59 » — aucune règle de clôture n'existe dans l'application.
+2.4  États vides : pictogramme, titre, explication et action secondaire (plus de cadre pointillé).
+2.5  Onboarding : trois écrans pour les rapporteurs, affiché une seule fois par compte (mémorisé sur l'appareil).
+Taux mesurés en production (80 % d'onboarding, 90 % de transmission, test de compréhension des statuts) : non mesurables ici.

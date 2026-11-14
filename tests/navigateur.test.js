@@ -39,6 +39,7 @@ function mkRoute(st) {
 }
 async function open(b, st, opts = {}) {
   const ctx = await b.newContext({ viewport: opts.viewport || { width: 360, height: 760 }, colorScheme: opts.scheme || 'light', serviceWorkers: 'block', acceptDownloads: true });
+  await ctx.addInitScript(() => { try { localStorage.setItem('tt:onb:u1', '1'); } catch (e) {} });
   await ctx.addInitScript(() => { localStorage.setItem('tt_session', JSON.stringify({ access_token: 'a', refresh_token: 'r', expires_at: Math.floor(Date.now() / 1000) + 3600, user: { id: 'u1', email: 'x@y.z' } })); });
   await ctx.clock.setFixedTime(new Date('2026-10-20T12:00:00Z')); // les données de test sont d'octobre 2026
   await ctx.route(SB + '/**', mkRoute(st));
