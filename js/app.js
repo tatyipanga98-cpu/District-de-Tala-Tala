@@ -108,7 +108,7 @@
     }));
   }
   function shell(content) {
-    root.replaceChildren(h("a", { class: "skip", href: "#main", text: "Aller au contenu" }), header(), h("main", { id: "main", tabindex: "-1" }, content), nav());
+    TT.replaceAll(root, h("a", { class: "skip", href: "#main", text: "Aller au contenu" }), header(), h("main", { id: "main", tabindex: "-1" }, content), nav());
   }
   async function manualSync() {
     if (!navigator.onLine) { D.online = false; TT.toast("Pas de connexion Internet.", "bad"); render(); return; }
@@ -169,7 +169,7 @@
       h("img", { class: "login-logo", src: "icons/logo.png", alt: "Église Néo-Apostolique de la RDC-Ouest" }),
       h("h1", { text: "District de Tala-Tala" }),
       h("p", { class: "place", text: "Champ apostolique de Kinshasa-Centre 2" }));
-    root.replaceChildren(h("div", { class: "auth" }, brandPanel, h("main", { class: "auth-form" }, form,
+    TT.replaceAll(root, h("div", { class: "auth" }, brandPanel, h("main", { class: "auth-form" }, form,
       h("p", { class: "foot", text: "Fonctionne hors connexion après la première ouverture. Vos saisies sont conservées sur l'appareil et envoyées dès le retour d'Internet." }))));
   }
 
@@ -179,7 +179,7 @@
     var msg = h("p", { class: "msg", hidden: true, role: "status" });
     var btn = h("button", { class: "btn primary block", type: "submit", text: "Enregistrer le mot de passe" });
     function say(t, k) { msg.textContent = t; msg.className = "msg " + (k || ""); msg.hidden = !t; }
-    root.replaceChildren(h("main", { class: "center" }, h("form", { class: "card login", onsubmit: async function (ev) {
+    TT.replaceAll(root, h("main", { class: "center" }, h("form", { class: "card login", onsubmit: async function (ev) {
       ev.preventDefault();
       if (p1.value.length < 8) { say("Au moins 8 caractères.", "bad"); return; }
       if (p1.value !== p2.value) { say("Les deux mots de passe ne sont pas identiques.", "bad"); return; }
@@ -200,7 +200,7 @@
 
   /* ---------- Démarrage ---------- */
   async function startSession() {
-    root.replaceChildren(h("main", { class: "center" }, h("p", { class: "sub", text: "Chargement…" })));
+    TT.replaceAll(root, h("main", { class: "center" }, h("p", { class: "sub", text: "Chargement…" })));
     await D.loadLocal();
     try { await D.loadProfile(); } catch (e) {
       if (!e.isNetwork) { await A.signOut(); showLogin(TT.friendly(e), "bad"); return; }
@@ -319,7 +319,7 @@
     }
     function draw() {
       var st = steps[i], last = i === steps.length - 1;
-      back.replaceChildren(h("div", { class: "dialog onb" },
+      TT.replaceAll(back, h("div", { class: "dialog onb" },
         h("p", { class: "muted", text: (i + 1) + " sur " + steps.length }),
         h("h2", { id: "onb-title", text: st.t }),
         h("p", { text: st.b }),
@@ -449,9 +449,14 @@
       status: function (st) { return TT.STATUS[st] || st; }
     };
   }
-  async function savePdf(model, btn) {
+  /* Export PDF : indicateur « Préparation du PDF… » ; si le chargement échoue, on oriente vers l'export CSV.
+     L'interface n'est pas bloquée : le rendu est asynchrone, et un message apparaît après 5 secondes. */
+  async function savePdf(model, btn, csvHint) {
     var old = btn ? btn.textContent : null;
-    if (btn) { btn.disabled = true; btn.textContent = "Préparation…"; }
+    var slow = setTimeout(function () {
+      TT.toast("Le PDF prend plus de temps que prévu. Vous pouvez patienter" + (csvHint ? ", ou utiliser l'export CSV." : "."), "");
+    }, 5000);
+    if (btn) { btn.disabled = true; btn.setAttribute("aria-busy", "true"); btn.textContent = "Préparation du PDF…"; }
     try {
       if (window.__loadPdfLib) await window.__loadPdfLib();
       var logo = await TTPdf.loadLogo();
@@ -459,9 +464,10 @@
       TT.download(model.fileName, bytes, "application/pdf");
       TT.toast("PDF créé : " + model.fileName, "good");
     } catch (e) {
-      TT.toast("Le PDF n'a pas pu être créé. " + TT.friendly(e), "bad");
+      TT.toast("Le PDF n'a pas pu être créé. " + TT.friendly(e) + (csvHint ? " " + csvHint : ""), "bad");
     } finally {
-      if (btn) { btn.disabled = false; btn.textContent = old; }
+      clearTimeout(slow);
+      if (btn) { btn.disabled = false; btn.removeAttribute("aria-busy"); btn.textContent = old; }
     }
   }
 
@@ -509,7 +515,7 @@
         .concat(v.map(function (x) { return { at: x.created_at, text: { validated: "Validé", rejected: "Rejeté", returned_for_correction: "Renvoyé pour correction" }[x.decision] || x.decision, note: x.note }; }))
         .sort(function (a, b) { return a.at.localeCompare(b.at); });
       if (!items.length) return;
-      box.replaceChildren(h("section", { class: "card" }, h("h3", { text: "Historique" }), items.map(function (i) {
+      TT.replaceAll(box, h("section", { class: "card" }, h("h3", { text: "Historique" }), items.map(function (i) {
         return h("p", {}, h("strong", { text: new Date(i.at).toLocaleDateString("fr-FR") + " — " + i.text }), i.note ? h("span", { class: "muted", text: " : " + i.note }) : null);
       })));
     } catch (e) {}
@@ -703,6 +709,7 @@
           await D.enqueueInsert(payload, c.offs, c.acts, submit);
         }
         formDirty = false;
+        try { localStorage.removeItem(autoKey); } catch (e) {}
         TT.toast(D.online ? "Enregistré. Envoi en cours…" : "Enregistré sur cet appareil. Envoi dès le retour d'Internet.", "good");
         go("reports");
       } catch (e) { err.textContent = TT.friendly(e); err.hidden = false; }
@@ -715,10 +722,58 @@
           ? h("button", { class: "btn primary", type: "submit", text: "Enregistrer les modifications" })
           : [h("button", { class: "btn", type: "submit", text: "Enregistrer le brouillon" }),
              h("button", { class: "btn primary", type: "button", onclick: function () { save(true); }, text: submitLabel })]);
-    var form = h("form", { class: "card form", novalidate: true, oninput: function () { formDirty = true; }, onsubmit: function (e) { e.preventDefault(); save(false); } },
+    /* Brouillon automatique : la saisie en cours (sans validation) est gardée sur cet appareil jusqu'à l'enregistrement
+       de la fiche. Ce n'est pas la file d'envoi : rien n'est transmis tant que l'utilisateur n'enregistre pas. */
+    function pad2(n) { return (n < 10 ? "0" : "") + n; }
+    function hhmm(d) { return pad2(d.getHours()) + ":" + pad2(d.getMinutes()); }
+    var autoKey = "tt:autosave:" + (D.profile && D.profile.id || "x") + ":" + (existing ? (existing.id || existing._qid) : copy ? "copie-" + copy.id : "nouvelle");
+    var autoState = h("p", { class: "muted autosave", "aria-live": "polite", text: "" });
+    var autoTimer = null;
+    function readAuto() {
+      try {
+        var raw = localStorage.getItem(autoKey);
+        if (!raw) return null;
+        var o = JSON.parse(raw);
+        if (!o || o.v !== 1 || !o.f || Date.now() - o.at > 7 * 86400000) { localStorage.removeItem(autoKey); return null; }
+        return o;
+      } catch (e) { return null; }
+    }
+    function fieldValues() {
+      return { comm: iComm.value, type: iType.value, desc: iDesc.value, date: iDate.value, start: iStart.value, end: iEnd.value,
+        mem: iMem.value, vis: iVis.value, fc: iFC.value, usd: iUSD.value, bible: iBible.value, writer: iWriter.value,
+        receipt: iReceipt.value, obs: iObs.value, off: iOff.value,
+        offs: offRows.map(function (r) { return r.n.value; }),
+        acts: actRows.map(function (r) { return [r.t.value, r.q.value, r.n.value]; }) };
+    }
+    function autosaveNow() {
+      try {
+        var now = new Date();
+        localStorage.setItem(autoKey, JSON.stringify({ v: 1, at: now.getTime(), f: fieldValues() }));
+        autoState.textContent = "Enregistré à " + hhmm(now);
+      } catch (e) { autoState.textContent = "Brouillon automatique indisponible sur cet appareil."; }
+    }
+    function scheduleAutosave() { clearTimeout(autoTimer); autoTimer = setTimeout(autosaveNow, 800); }
+    function applyValues(f) {
+      iComm.value = f.comm || ""; iType.value = f.type || ""; iDesc.value = f.desc || ""; iDate.value = f.date || "";
+      iStart.value = f.start || ""; iEnd.value = f.end || ""; iMem.value = f.mem || ""; iVis.value = f.vis || "";
+      iFC.value = f.fc || ""; iUSD.value = f.usd || ""; iBible.value = f.bible || ""; iWriter.value = f.writer || "";
+      iReceipt.value = f.receipt || ""; iObs.value = f.obs || ""; iOff.value = f.off || "";
+      offRows.length = 0; TT.replaceAll(offBox);
+      (f.offs || []).forEach(function (n) { offRow({ name_as_reported: n }); });
+      actRows.length = 0; TT.replaceAll(actBox);
+      (f.acts || []).forEach(function (a) { actRow({ act_type: a[0], quantity: a[1], notes: a[2] }); });
+      syncDesc();
+    }
+    var stored = readAuto();
+    var autoBanner = h("div", { class: "card alert autosave-banner", role: "status", hidden: !stored },
+      h("p", { text: stored ? "Un brouillon non transmis a été trouvé sur cet appareil (enregistré à " + hhmm(new Date(stored.at)) + ")." : "" }),
+      h("div", { class: "row" },
+        h("button", { class: "btn primary", type: "button", text: "Restaurer", onclick: function () { applyValues(stored.f); autoBanner.hidden = true; autosaveNow(); } }),
+        h("button", { class: "btn ghost", type: "button", text: "Ignorer", onclick: function () { try { localStorage.removeItem(autoKey); } catch (e) {} autoBanner.hidden = true; autoState.textContent = ""; } })));
+    var form = h("form", { class: "card form", novalidate: true, oninput: function () { formDirty = true; scheduleAutosave(); }, onsubmit: function (e) { e.preventDefault(); save(false); } },
       h("div", { class: "form-head" },
         h("h2", { text: title }),
-        h("p", { class: "legend-note" }, h("span", { class: "req", "aria-hidden": "true", text: "*" }), " Champs obligatoires. Les autres sont facultatifs.")),
+        h("p", { class: "legend-note" }, h("span", { class: "req", "aria-hidden": "true", text: "*" }), " Champs obligatoires. Les autres sont facultatifs.")), autoState, autoBanner,
       copy ? h("p", { class: "hint box", text: "Cette fiche remplacera la fiche validée dans les statistiques une fois validée à son tour." }) : null,
       h("section", { class: "form-section" }, sectionHead(1, "Activité"),
         reqField("Communauté", iComm), reqField("Type d'activité", iType), descField,
@@ -814,7 +869,7 @@
     }
     function exportPdf(btn) {
       savePdf(TTPdf.summaryModel(res, { title: "Statistiques du district", periodLabel: periodLabel, scopeLabel: scopeName, statusLabel: statusLabels[s.statuses],
-        labels: pdfLabels(), communities: D.communities, types: D.types, periodSlug: slug(periodLabel), communitySlug: slug(scopeName) }), btn);
+        labels: pdfLabels(), communities: D.communities, types: D.types, periodSlug: slug(periodLabel), communitySlug: slug(scopeName) }), btn, "Utilisez « Exporter la synthèse (CSV) » sur cet écran.");
     }
     
     shell([
@@ -866,13 +921,13 @@
     var msg = h("p", { class: "msg", hidden: true, role: "status" });
     var out = h("div");
     var form = h("form", { class: "card", onsubmit: async function (ev) {
-      ev.preventDefault(); msg.hidden = true; out.replaceChildren();
+      ev.preventDefault(); msg.hidden = true; TT.replaceAll(out);
       var comm = !commField.hidden ? iComm.value : null;
       if (!commField.hidden && !comm) { msg.textContent = "Choisissez la communauté."; msg.className = "msg bad"; msg.hidden = false; return; }
       try {
         var r = await A.fn("swift-api", { users: [{ email: iMail.value.trim(), display_name: iName.value.trim(), role: iRole.value, community_id: comm }] });
         var u = r.created[0];
-        out.replaceChildren(h("div", { class: "box good" }, h("p", {}, h("strong", { text: "Compte créé pour " + u.email + "." })), h("p", { text: "Mot de passe provisoire (affiché une seule fois) :" }),
+        TT.replaceAll(out, h("div", { class: "box good" }, h("p", {}, h("strong", { text: "Compte créé pour " + u.email + "." })), h("p", { text: "Mot de passe provisoire (affiché une seule fois) :" }),
           h("p", {}, h("code", { id: "tmp-pw", text: u.temporary_password })),
           h("p", { class: "hint", text: "Transmettez-le de façon confidentielle. La personne devra le remplacer à sa première connexion." }),
           h("button", { class: "btn small", type: "button", text: "Copier", onclick: function () { try { navigator.clipboard.writeText(u.temporary_password).then(function () { TT.toast("Copié.", "good"); }); } catch (e) { TT.toast("Sélectionnez le mot de passe pour le copier.", "bad"); } } })));
@@ -888,7 +943,7 @@
       try {
         var r = await A.fn("swift-api", { reset_password: { user_id: p.id } });
         out2.hidden = false;
-        out2.replaceChildren(h("p", {}, h("strong", { text: "Nouveau mot de passe provisoire pour " + p.display_name + " :" })),
+        TT.replaceAll(out2, h("p", {}, h("strong", { text: "Nouveau mot de passe provisoire pour " + p.display_name + " :" })),
           h("p", {}, h("code", { text: r.temporary_password })),
           h("p", { class: "hint", text: "Affiché une seule fois. Transmettez-le de façon confidentielle." }));
       } catch (e) { TT.toast(TT.friendly(e), "bad"); }
@@ -907,7 +962,7 @@
     var backupCard = h("section", { class: "card" }, h("h3", { text: "Sauvegarde des données" }),
       h("p", { class: "hint", text: "Fichier complet : communautés, types d'activités, comptes (sans mots de passe), fiches, intervenants, actes, contrôles et validations. Conservez-le hors de cet appareil." }),
       h("button", { class: "btn ghost", type: "button", text: "Télécharger une sauvegarde (JSON)", onclick: function (ev) { backup(ev.currentTarget); } }));
-    box.replaceChildren(form, list, backupCard);
+    TT.replaceAll(box, form, list, backupCard);
   }
 
   async function backup(btn) {
@@ -969,7 +1024,7 @@
       const stored = parseInt(localStorage.getItem(EPOCH_KEY) || '0', 10);
       var res = await TTApi.select('profiles', 'select=session_epoch&id=eq.' + TTApi.user().id);
       if (!res || !res.length) return;
-      const server = res[0].session_epoch ?? 0;
+      const server = (res[0].session_epoch != null ? res[0].session_epoch : 0);
 
       if (stored > 0 && stored !== server) {
         await TTApi.signOut();
@@ -1006,7 +1061,7 @@ window.mountStatsCharts = function (stats) {
   if (lineTarget && stats.byMonth && stats.byMonth.length > 1) {
     const line = TTChart.lineChart({
       data: stats.byMonth.map((m) => m.total),
-      labels: stats.byMonth.map((m) => m.shortLabel ?? m.label),
+      labels: stats.byMonth.map((m) => (m.shortLabel != null ? m.shortLabel : m.label)),
       ariaLabel: 'Évolution mensuelle des présences',
       annotations: stats.peakMonth ? [{ index: stats.peakMonth.index, label: stats.peakMonth.label }] : [],
       formatter: (v) => v.toLocaleString('fr-FR'),

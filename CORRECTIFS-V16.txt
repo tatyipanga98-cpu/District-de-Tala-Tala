@@ -65,3 +65,17 @@ CORRECTIFS — PASSE 2 (expérience utilisateur)
 2.4  États vides : pictogramme, titre, explication et action secondaire (plus de cadre pointillé).
 2.5  Onboarding : trois écrans pour les rapporteurs, affiché une seule fois par compte (mémorisé sur l'appareil).
 Taux mesurés en production (80 % d'onboarding, 90 % de transmission, test de compréhension des statuts) : non mesurables ici.
+
+CORRECTIFS — PASSE 3 (performance, compatibilité, confiance)
+3.1  Export PDF : libellé « Préparation du PDF… » ; un message apparaît après 5 s sans bloquer l'interface ;
+     si la bibliothèque PDF ne se charge pas, le message renvoie vers l'export CSV (disponible pour la synthèse).
+     NON REPRIS : export CSV de la fiche détaillée (il n'existe pas de CSV pour une seule fiche aujourd'hui).
+3.2  Ordre de chargement documenté dans index.html : config, api, store, stats, ui, chart, pdf, schedule, data, app.
+3.3  Mesure sur émulateur (tests/perf.test.js, serveur compressé gzip, CPU 4× plus lent) :
+       3G régulière (750 kbit/s, 250 ms) : accueil affiché en ~1,7 s (objectif < 3 s) — atteint.
+       Slow 3G (400 kbit/s, 400 ms) : ~2,4 s.
+     Appareils réels Tecno/Itel Android 9-11 : NON TESTÉS ICI. Liste à faire sur place (voir la réponse).
+     Compatibilité : suppression de replaceChildren (Chrome 86+) et de ?? (Chrome 80+) pour les anciens WebView.
+3.4  Brouillon automatique : « Enregistré à HH:MM » dans le formulaire (sauvegarde locale 0,8 s après la dernière saisie) ;
+     bandeau « Restaurer / Ignorer » à la réouverture ; effacé dès que la fiche est enregistrée.
+     ⚠ Ce brouillon reste sur l'appareil, après déconnexion aussi : même réserve que pour la file d'attente (voir passe 1, 1.4).

@@ -23,14 +23,25 @@
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 <noscript><p style="padding:1rem">Cette application nécessite JavaScript.</p></noscript>
 
+<!-- Ordre de chargement (scripts différés, exécutés dans cet ordre). Dépendances :
+     config.js      : TT_CONFIG (adresse et clé publique Supabase) — requis par api.js
+     api.js         : liaison Supabase — aucune dépendance
+     store.js       : IndexedDB (stockage local) — aucune dépendance
+     stats.js       : calculs (TTStats) — aucune dépendance au chargement
+     ui.js          : outils d'affichage TT — requis par data.js et app.js
+     chart.js       : graphiques SVG (TTChart) — aucune dépendance au chargement
+     pdf.js         : rendu PDF (TTPdf) ; pdf-lib est chargé à la demande par loader.js
+     schedule.js    : règle des services divins (TTSchedule) — requis par app.js
+     data.js        : file d'attente et synchronisation — requis par app.js
+     app.js         : écrans (dépend de tout ce qui précède) -->
 <script defer src="config.js"></script>
-<script defer src="js/stats.js"></script>
-<script defer src="js/chart.js"></script>
-<script defer src="js/schedule.js"></script>
-<script defer src="js/pdf.js"></script>
 <script defer src="js/api.js"></script>
 <script defer src="js/store.js"></script>
+<script defer src="js/stats.js"></script>
 <script defer src="js/ui.js"></script>
+<script defer src="js/chart.js"></script>
+<script defer src="js/pdf.js"></script>
+<script defer src="js/schedule.js"></script>
 <script defer src="js/data.js"></script>
 <script defer src="js/app.js"></script>
 

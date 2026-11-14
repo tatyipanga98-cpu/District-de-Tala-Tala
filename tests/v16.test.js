@@ -44,6 +44,19 @@ const rep = (id, d, t, rc, st = 'submitted') => ({ id, report_code: 'TT-2026-000
   check('brouillon : bouton « Continuer le brouillon »', (await p.locator('button', { hasText: 'Continuer le brouillon' }).count()) === 1);
   await navTo(p, 'Activités'); check('statuts : icône de brouillon ↻ dans la liste', (await p.locator('.chip.ico', { hasText: '↻' }).count()) >= 1);
   await ctx.close();
+  // Autosave : indicateur « Enregistré à HH:MM » et restauration proposée
+  { const ctx3 = await run(b, 'Armine Lubamba', 'community_clerk', [], '2026-11-14T02:34:00Z');
+    const p3 = ctx3.p;
+    await p3.locator('button', { hasText: 'Rédiger le rapport' }).click(); await p3.waitForTimeout(300);
+    await p3.fill('#fm-writer', 'Brouillon test'); await p3.waitForTimeout(1100);
+    const st = await p3.locator('.autosave').innerText();
+    check('autosave : « Enregistré à HH:MM » affiché', /^Enregistré à \d{2}:\d{2}$/.test(st), st);
+    await p3.reload(); await p3.waitForTimeout(1200);
+    await p3.locator('button', { hasText: 'Rédiger le rapport' }).click(); await p3.waitForTimeout(400);
+    check('autosave : bandeau de restauration après rechargement', (await p3.locator('.autosave-banner:not([hidden])').count()) === 1);
+    await p3.locator('.autosave-banner button', { hasText: 'Restaurer' }).click(); await p3.waitForTimeout(200);
+    check('autosave : saisie restaurée', (await p3.inputValue('#fm-writer')) === 'Brouillon test');
+    await ctx3.ctx.close(); }
   // Onboarding : affiché une fois, trois écrans, puis mémorisé
   { const ctx2 = await b.newContext({ viewport: { width: 390, height: 800 }, serviceWorkers: 'block' });
     await ctx2.clock.setFixedTime(new Date('2026-11-14T02:34:00Z'));

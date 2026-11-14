@@ -671,3 +671,6 @@ nav.bottom button.active .ni svg { stroke-width: 2.2; }
 .dialog.onb { max-width: 30rem; display: grid; gap: .8rem; }
 .dialog.onb h2 { font: 600 1.35rem/1.25 var(--serif); margin: 0; color: var(--ink); }
 .dialog.onb .row.end { margin-top: .4rem; }
+.autosave { font-size: .85rem; margin: .3rem 0 0; min-height: 1.2em; }
+.autosave-banner { margin-bottom: .8rem; }
+.autosave-banner .row { gap: .5rem; }

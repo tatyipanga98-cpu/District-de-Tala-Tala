@@ -3,6 +3,17 @@
   "use strict";
   var TT = window.TT = window.TT || {};
 
+  /* Remplace le contenu d'un élément (équivalent de replaceChildren, compatible avec les anciens WebView Android). */
+  TT.replaceAll = function (el) {
+    while (el.firstChild) el.removeChild(el.firstChild);
+    function put(c) {
+      if (c === null || c === undefined || c === false) return;
+      if (Array.isArray(c)) c.forEach(put);
+      else el.appendChild(c.nodeType ? c : document.createTextNode(String(c)));
+    }
+    for (var i = 1; i < arguments.length; i++) put(arguments[i]);
+    return el;
+  };
   TT.h = function (tag, attrs) {
     var el = document.createElement(tag);
     attrs = attrs || {};

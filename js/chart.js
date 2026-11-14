@@ -5,7 +5,7 @@
 // =========================================================================
 
 function esc(s) {
-  return String(s ?? '').replace(/[&<>"']/g, (c) => ({
+  return String(s != null ? s : '').replace(/[&<>"']/g, (c) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
   }[c]));
 }
@@ -79,7 +79,7 @@ function lineChart(opts) {
   const table = `<table class="sr-only">
     <caption>${esc(ariaLabel)}</caption>
     <thead><tr><th>Période</th><th>Valeur</th></tr></thead>
-    <tbody>${data.map((v, i) => `<tr><td>${esc(labels[i] ?? i)}</td><td>${esc(formatter(v))}</td></tr>`).join('')}</tbody>
+    <tbody>${data.map((v, i) => `<tr><td>${esc((labels[i] != null ? labels[i] : i))}</td><td>${esc(formatter(v))}</td></tr>`).join('')}</tbody>
   </table>`;
 
   return { svg, table };
