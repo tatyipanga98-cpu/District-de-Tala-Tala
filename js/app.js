@@ -373,11 +373,12 @@
     if (isCommunity()) tiles = [["Brouillons", count("draft")], ["À corriger", count("needs_correction")], ["Transmis", count("submitted") + count("in_control") + count("checked")], ["Validés", count("validated")]];
     else tiles = [["À contrôler", count("submitted") + count("in_control")], ["À valider", count("checked")], ["À corriger", count("needs_correction")], ["Validés", count("validated")]];
     blocks.push(h("section", { class: "tiles" }, tiles.map(function (t) {
-      return h("button", { class: "tile", type: "button", onclick: function () { go(isCommunity() ? "reports" : "review", {}); } }, h("span", { class: "num", text: String(t[1]) }), h("span", { class: "lbl", text: t[0] }));
+      return h("button", { class: "tile tile-" + ({ "Brouillons": "draft", "À corriger": "fix", "Transmis": "sent", "Validés": "ok", "À contrôler": "sent", "À valider": "val" }[t[0]] || "sent"), type: "button", onclick: function () { go(isCommunity() ? "reports" : "review", {}); } }, h("span", { class: "num", text: String(t[1]) }), h("span", { class: "lbl", text: t[0] }));
     })));
     blocks.push(moneyBlock(st, y, m));
     if (!D.online) blocks.push(h("p", { class: "foot", text: "Mode hors connexion : vous voyez les dernières données reçues sur cet appareil." }));
     shell(blocks);
+    try { document.querySelectorAll(".tile .num").forEach(function (n) { var v = parseInt(n.textContent, 10) || 0; if (window.TTChart && v > 0) window.TTChart.animateCounter(n, v, { duration: 700 }); }); } catch (e) {}
     if (isCommunity() && !onbShown && !onbDone()) { onbShown = true; showOnboarding(); }
   }
 
@@ -910,7 +911,7 @@
           return h("div", { class: "rate-row" },
             h("div", { class: "rate-head" }, h("span", { text: r.name }), h("span", { class: "rate-val", text: r.ok + " / " + r.all + " · " + p + " %" })),
             h("div", { class: "reg-progress", role: "progressbar", "aria-label": r.name + " : fiches validées", "aria-valuemin": "0", "aria-valuemax": "100", "aria-valuenow": String(p) },
-              h("span", { style: "width:" + p + "%" })));
+              h("span", { class: p >= 80 ? "is-good" : p >= 50 ? "is-warn" : "is-bad", style: "width:" + p + "%" })));
         }));
     })();
     shell([
