@@ -812,7 +812,9 @@
     var chartStats = {
       byCommunity: Object.keys(res.byCommunity).map(function (id) {
         var c = D.communities.find(function (x) { return x.id === id; });
-        return { name: c ? c.name : id, total: res.byCommunity[id].n };
+        var t = res.byCommunity[id];
+        return { id: id, name: c ? c.name : id, total: t.n, isMine: isCommunity() && D.profile.community_id === id,
+          items: ["Présences : " + TT.fmtInt(t.members) + " membres, " + TT.fmtInt(t.visitors) + " visiteurs", "Offrandes : " + TT.fmtFC(t.fc) + " ; " + TT.fmtUSD(t.usd)] };
       }).sort(function(a, b) { return b.total - a.total; }),
       byType: Object.keys(res.byType).map(function (id) {
         var t = D.types.find(function (x) { return x.id === id; });
@@ -826,6 +828,16 @@
       var r = S.periodRange("month", s.year, m);
       var mRes = S.compute(D.reports, { from: r.from, to: r.to, statuses: statusSets[s.statuses], communityId: s.community || (isCommunity() ? D.profile.community_id : "") });
       chartStats.byMonth.push({ label: TT.MONTHS[m-1], shortLabel: TT.MONTHS[m-1].substring(0,3), total: mRes.total.n });
+    }
+    // Calendrier : activités par jour du mois affiché (le dernier mois de la période si ce n'est pas un mois)
+    var almMonth = s.kind === "month" ? s.idx : s.kind === "quarter" ? s.idx * 3 : 12;
+    var almDays = new Date(Date.UTC(s.year, almMonth, 0)).getUTCDate();
+    chartStats.year = s.year;
+    chartStats.almanach = { year: s.year, month: almMonth, counts: {} };
+    for (var dd = 1; dd <= almDays; dd++) {
+      var dk = s.year + "-" + String(almMonth).padStart(2, "0") + "-" + String(dd).padStart(2, "0");
+      var dRes = S.compute(D.reports, { from: dk, to: dk, statuses: statusSets[s.statuses], communityId: s.community || (isCommunity() ? D.profile.community_id : "") });
+      chartStats.almanach.counts[dk] = dRes.total.n;
     }
     // ---------------------------------------------------
 
@@ -879,9 +891,10 @@
       // --- BLOC GRAPHIQUES ---
       h("section", { class: "charts", "aria-labelledby": "charts-title", style: "margin-bottom:1.5rem;" },
         h("h2", { id: "charts-title", class: "sr-only", text: "Vues graphiques" }),
-        h("div", { class: "chart-card" }, h("h3", { text: "Évolution sur 12 mois" }), h("p", { class: "chart-sub", text: "Présences totales, toutes communautés confondues." }), h("div", { id: "chart-line" })),
-        h("div", { class: "chart-card" }, h("h3", { text: "Classement des communautés" }), h("p", { class: "chart-sub", text: "Les 12 communautés les plus actives sur la période." }), h("div", { id: "chart-bar" })),
-        h("div", { class: "chart-card" }, h("h3", { text: "Répartition par type d'activité" }), h("p", { class: "chart-sub", text: "Part de chaque type dans le total de la période." }), h("div", { id: "chart-stack" }))
+        h("div", { class: "chart-card" }, h("h3", { text: "Évolution sur 12 mois" }), h("p", { class: "chart-sub", text: "Présences totales, toutes communautés confondues." }), h("div", { id: "sig-parchemin" })),
+        h("div", { class: "chart-card" }, h("h3", { text: "Classement des communautés" }), h("p", { class: "chart-sub", text: "Présences par communauté sur la période. Touchez une ligne pour le détail." }), h("div", { id: "sig-honneur" })),
+        h("div", { class: "chart-card" }, h("h3", { text: "Répartition par type d'activité" }), h("p", { class: "chart-sub", text: "Part de chaque type dans le total de la période." }), h("div", { id: "sig-roue" })),
+        h("div", { class: "chart-card" }, h("h3", { text: "Calendrier du mois" }), h("p", { class: "chart-sub", text: "Activités par jour. Touchez une case pour voir le détail." }), h("div", { id: "sig-almanach" }))
       ),
       // ----------------------
 
@@ -899,6 +912,8 @@
     ]);
 
     // Déclenchement du dessin des graphiques après le rendu HTML
+    chartStats.periodLabel = periodLabel;
+    chartStats.scopeName = scopeName;
     setTimeout(function () {
       if (window.mountStatsCharts) window.mountStatsCharts(chartStats);
     }, 10);
@@ -1055,39 +1070,74 @@
 // V16 — Fonction d'affichage des graphiques
 // =========================================================
 window.mountStatsCharts = function (stats) {
-  if (typeof TTChart === 'undefined') return;
-
-  const lineTarget = document.querySelector('#chart-line');
-  if (lineTarget && stats.byMonth && stats.byMonth.length > 1) {
-    const line = TTChart.lineChart({
-      data: stats.byMonth.map((m) => m.total),
-      labels: stats.byMonth.map((m) => (m.shortLabel != null ? m.shortLabel : m.label)),
-      ariaLabel: 'Évolution mensuelle des présences',
-      annotations: stats.peakMonth ? [{ index: stats.peakMonth.index, label: stats.peakMonth.label }] : [],
-      formatter: (v) => v.toLocaleString('fr-FR'),
+  if (!window.TTSig) return;
+  const fmtN = (v) => Number(v || 0).toLocaleString('fr-FR');
+  // Légende (phrase du cartographe) placée sous le graphique.
+  const caption = (box, text) => {
+    if (!box || !text) return;
+    const p = document.createElement('p');
+    p.className = 'sig-legend';
+    p.textContent = text;
+    box.parentNode.appendChild(p);
+  };
+  // Équivalent texte, lu par les lecteurs d'écran uniquement.
+  const srTable = (box, title, head, rows) => {
+    const t = document.createElement('table');
+    t.className = 'sr-only';
+    const cap = document.createElement('caption');
+    cap.textContent = title;
+    t.appendChild(cap);
+    const hr = document.createElement('tr');
+    head.forEach((x) => { const th = document.createElement('th'); th.setAttribute('scope', 'col'); th.textContent = x; hr.appendChild(th); });
+    t.appendChild(hr);
+    rows.forEach((r) => {
+      const tr = document.createElement('tr');
+      r.forEach((c) => { const td = document.createElement('td'); td.textContent = String(c); tr.appendChild(td); });
+      t.appendChild(tr);
     });
-    lineTarget.innerHTML = line.svg + line.table;
+    box.appendChild(t);
+  };
+
+  const lineBox = document.getElementById('sig-parchemin');
+  if (lineBox && stats.byMonth && stats.byMonth.length) {
+    const months = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+    const values = stats.byMonth.map((m) => m.total);
+    const res = TTSig.parchemin(lineBox, {
+      values: values,
+      labels: stats.byMonth.map((m) => m.shortLabel || m.label),
+      year: stats.year,
+      title: 'Présences mois par mois en ' + stats.year,
+      desc: 'Présences par mois en ' + stats.year + ' : ' + values.map((v, i) => months[i] + ' ' + fmtN(v)).join(', ') + '.',
+    });
+    srTable(lineBox, 'Présences par mois, ' + stats.year, ['Mois', 'Présences'], stats.byMonth.map((m) => [m.label, fmtN(m.total)]));
+    caption(lineBox, res.legend);
   }
 
-  const barTarget = document.querySelector('#chart-bar');
-  if (barTarget && stats.byCommunity) {
-    const items = stats.byCommunity.slice(0, 12).map((c) => ({ label: c.name, value: c.total }));
-    const bar = TTChart.barChart({
-      items: items,
-      ariaLabel: 'Classement des communautés',
-      formatter: (v) => v.toLocaleString('fr-FR'),
+  const honBox = document.getElementById('sig-honneur');
+  if (honBox && stats.byCommunity) {
+    const res = TTSig.honneur(honBox, {
+      rows: stats.byCommunity.slice(0, 12).map((c) => ({ name: c.name, value: c.total, isMine: c.isMine, items: c.items })),
+      caption: 'Classement des communautés par nombre de présences',
+      periodLabel: stats.periodLabel || '',
+      scopeLabel: stats.scopeName || '',
     });
-    barTarget.innerHTML = bar.svg + bar.table;
+    caption(honBox, res.legend);
   }
 
-  const stackTarget = document.querySelector('#chart-stack');
-  if (stackTarget && stats.byType) {
-    const segments = stats.byType.map((t) => ({ label: t.label, value: t.total }));
-    const stack = TTChart.stackedBar({
-      segments: segments,
-      ariaLabel: "Répartition par type d'activité",
-      formatter: (v) => v.toLocaleString('fr-FR'),
+  const rouBox = document.getElementById('sig-roue');
+  if (rouBox && stats.byType) {
+    const res = TTSig.roue(rouBox, {
+      segments: stats.byType.map((t) => ({ label: t.label, value: t.total })),
+      title: "Répartition des activités par type",
+      desc: 'Répartition : ' + stats.byType.map((t) => t.label + ' ' + fmtN(t.total)).join(', ') + '.',
     });
-    stackTarget.innerHTML = stack.svg + stack.legend + stack.table;
+    if (res.rows.length) srTable(rouBox, "Répartition par type d'activité", ['Type', 'Activités'], res.rows.map((r) => [r.label, fmtN(r.value)]));
+    caption(rouBox, res.legend);
+  }
+
+  const almBox = document.getElementById('sig-almanach');
+  if (almBox && stats.almanach) {
+    const res = TTSig.almanach(almBox, stats.almanach);
+    caption(almBox, res.legend);
   }
 };

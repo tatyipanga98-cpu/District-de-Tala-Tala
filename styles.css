@@ -434,6 +434,91 @@ th:first-child, td:first-child { text-align: left; white-space: normal; }
 tr.total th, tr.total td { border-top: 2px solid var(--navy); border-bottom: none; font: 600 1rem var(--serif); padding-top: .8rem; }
 
 /* ---------- Graphiques SVG ---------- */
+/* Graphiques signature : jetons propres ; les couleurs de marque viennent des jetons existants. */
+:root {
+  --sig-navy: var(--navy);
+  --sig-navy-soft: var(--sky);
+  --sig-gold: #9a7400;
+  --sig-good: var(--good);
+  --sig-bad: var(--bad);
+  --sig-muted: var(--muted);
+  --sig-ink: var(--ink);
+  --sig-ink-2: var(--ink-2);
+  --sig-paper: #ffffff;
+  --sig-grid: var(--rule-strong);
+  --sig-l1: #d5dcf4;
+  --sig-l2: #8ea2e0;
+  --sig-l3: #2a48b5;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --sig-gold: #f0c75e; --sig-paper: #111528; --sig-l1: #1d2a52; --sig-l2: #3350a0; --sig-l3: #3a58b8; }
+}
+:root[data-theme="dark"] { --sig-gold: #f0c75e; --sig-paper: #111528; --sig-l1: #1d2a52; --sig-l2: #3350a0; --sig-l3: #3a58b8; }
+
+.sig { width: 100%; height: auto; display: block; overflow: visible; font-variant-numeric: tabular-nums; }
+.sig text { font-family: var(--sans); }
+.sig-line-chart text { fill: var(--sig-muted); }
+.sig-line-chart .sig-value { fill: var(--sig-ink); font-weight: 600; }
+.sig-note {
+  margin: .6rem 0 0; padding: .5rem .75rem; display: grid; gap: .15rem;
+  border-left: 3px solid var(--sig-navy); background: var(--card-tint);
+  color: var(--sig-ink-2); font-size: .9rem;
+}
+.sig-note:empty { display: none; }
+.sig-note.is-record { border-left-color: var(--sig-gold); }
+.sig-note.is-low { border-left-color: var(--sig-bad); }
+.sig-note .sig-cap { color: var(--sig-muted); font-size: .8rem; }
+.sig-note .sig-big { font: 600 1.2rem/1.2 var(--serif); color: var(--sig-ink); font-variant-numeric: tabular-nums; }
+.sig-legend { font-size: .84rem; color: var(--sig-ink-2); margin: .6rem 0 0; line-height: 1.45; }
+
+/* Tableau d'honneur */
+table.sig-rank { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+table.sig-rank th, table.sig-rank td { text-align: left; vertical-align: middle; }
+.sig-rank-row > th { width: 55%; padding: 0 .4rem 0 0; font-weight: 400; }
+.sig-rank-row > td { padding: 0; }
+.sig-rank-row.is-mine > th { border-left: 3px solid var(--sig-gold); padding-left: .5rem; }
+.sig-rank-btn {
+  display: flex; align-items: center; gap: .4rem; width: 100%; min-height: 44px;
+  background: none; border: 0; padding: .4rem 0; font: inherit; color: var(--sig-ink); text-align: left; cursor: pointer;
+}
+.sig-rank-btn:focus-visible { box-shadow: var(--focus); border-radius: 4px; }
+.sig-rank-num { font-family: var(--serif); color: var(--sig-muted); min-width: 1.4rem; text-align: right; }
+.sig-fleuron { color: var(--sig-gold); }
+.sig-name { overflow-wrap: anywhere; }
+.sig-bar { position: relative; height: 4px; margin: .5rem 0 .2rem; background: var(--sig-grid); }
+.sig-bar-fill { position: absolute; inset: 0; background: var(--sig-navy); transform-origin: left center; }
+.sig-rank-row.is-mine .sig-bar-fill { background: var(--sig-gold); }
+.sig-val { display: block; text-align: right; font-weight: 600; color: var(--sig-ink); font-size: .9rem; }
+.sig-detail > td { padding: 0 0 .6rem; }
+.sig-items { margin: 0; padding-left: 1.1rem; font-size: .88rem; color: var(--sig-ink-2); }
+
+/* Roue des actes */
+.sig-seg { transition: transform 200ms ease; cursor: pointer; }
+.sig-wheel text { font-family: var(--sans); }
+
+/* L'Almanach */
+table.sig-cal { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 3px; font-variant-numeric: tabular-nums; }
+th.sig-cal-dow { font: 600 .72rem var(--sans); color: var(--sig-muted); text-align: center; padding: 0 0 .2rem; }
+th.sig-cal-wk { width: 1.8rem; font-size: .7rem; font-weight: 400; color: var(--sig-muted); text-align: right; padding-right: .3rem; }
+td.sig-cal-cell {
+  height: 2.6rem; padding: .25rem .35rem; vertical-align: top; cursor: pointer;
+  border-radius: 4px; background: var(--card-tint); box-shadow: inset 0 0 0 1px var(--sig-grid);
+}
+td.sig-cal-out { background: transparent; }
+.sig-cal-d { font-size: .78rem; color: var(--sig-ink-2); }
+.sig-lv1 { background: var(--sig-l1); }
+.sig-lv2 { background: var(--sig-l2); }
+.sig-lv3 { background: var(--sig-l3); }
+.sig-lv3 .sig-cal-d { color: #fff; }
+.sig-cal-best { box-shadow: inset 0 0 0 2px var(--sig-gold); }
+.sig-cal-key { display: flex; flex-wrap: wrap; gap: .4rem .8rem; align-items: center; font-size: .78rem; color: var(--sig-muted); margin-top: .6rem; }
+.sig-cal-sw { display: inline-block; width: .9rem; height: .9rem; border-radius: 3px; vertical-align: middle; margin-left: .3rem; box-shadow: inset 0 0 0 1px var(--sig-grid); }
+.sig-cal-sw.sig-lv0 { background: var(--card-tint); }
+
+@media (prefers-reduced-motion: reduce) {
+  .sig *, .sig-seg, .sig-bar-fill { transition: none !important; }
+}
+
 .charts {
   display: grid;
   grid-template-columns: 1fr;
@@ -455,18 +540,6 @@ tr.total th, tr.total td { border-top: 2px solid var(--navy); border-bottom: non
   color: var(--muted);
   font-size: .84rem;
   margin: 0 0 .75rem;
-}
-.chart-line, .chart-bar, .chart-stack {
-  width: 100%;
-  height: auto;
-  display: block;
-}
-.chart-line text, .chart-bar text, .chart-stack text {
-  font-family: var(--sans);
-}
-.chart-line text.axis, .chart-bar text.axis {
-  fill: var(--muted);
-  font-family: var(--serif);
 }
 .chart-legend {
   list-style: none; padding: 0; margin: .6rem 0 0;

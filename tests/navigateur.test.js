@@ -77,6 +77,20 @@ const navTo = async (p, label) => { await p.evaluate((l) => { const b = [...docu
     const csvPath = '/tmp/claude-0/' + dl2.suggestedFilename(); await dl2.saveAs(csvPath);
     const csv = fs.readFileSync(csvPath, 'utf8');
     check('export fiches CSV : identifiants TT-2026 présents', csv.includes('TT-2026-000500') && csv.includes('N° de fiche'), dl2.suggestedFilename());
+    // 4. Graphiques signature : chacun rendu, avec légende et équivalent texte ; note au toucher
+    await p.waitForTimeout(900);
+    check('graphiques : parchemin SVG rendu (12 mois)', (await p.locator('#sig-parchemin svg[role="img"] circle').count()) >= 1);
+    check('graphiques : tableau d\'honneur rendu', (await p.locator('#sig-honneur table.sig-rank tr.sig-rank-row').count()) >= 1);
+    check('graphiques : roue des actes rendue', (await p.locator('#sig-roue path.sig-seg').count()) >= 1);
+    check('graphiques : almanach rendu (7 colonnes)', (await p.locator('#sig-almanach td.sig-cal-cell').count()) >= 28);
+    check('graphiques : légende du cartographe présente', (await p.locator('.sig-legend').count()) >= 3);
+    check('graphiques : équivalent texte lisible (sr-only)', (await p.locator('#sig-parchemin table.sr-only').count()) === 1);
+    const bestCell = p.locator('#sig-almanach td.sig-cal-best').first();
+    if (await bestCell.count()) { await bestCell.click(); await p.waitForTimeout(100); }
+    else { await p.locator('#sig-almanach td.sig-cal-cell').nth(10).click(); await p.waitForTimeout(100); }
+    check('almanach : tap affiche une note de marge', (await p.locator('#sig-almanach .sig-note').innerText()).length > 0);
+    await p.locator('#sig-honneur .sig-rank-btn').first().click();
+    check('tableau d\'honneur : tap déplie le détail', (await p.locator('#sig-honneur tr.sig-detail:not([hidden])').count()) === 1);
     await p.screenshot({ path: SHOTS + '/stats-360.png', fullPage: true });
     check('aucune erreur JavaScript ni violation CSP (statistiques)', errs.length === 0, errs.join(' | ').slice(0, 300));
     await ctx.close();

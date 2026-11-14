@@ -79,3 +79,20 @@ CORRECTIFS — PASSE 3 (performance, compatibilité, confiance)
 3.4  Brouillon automatique : « Enregistré à HH:MM » dans le formulaire (sauvegarde locale 0,8 s après la dernière saisie) ;
      bandeau « Restaurer / Ignorer » à la réouverture ; effacé dès que la fiche est enregistrée.
      ⚠ Ce brouillon reste sur l'appareil, après déconnexion aussi : même réserve que pour la file d'attente (voir passe 1, 1.4).
+
+PASSE 4 — « Le Bestiaire des Signes » (graphiques signature)
+- Les trois graphiques Chart.js-like (TTChart) sont remplacés par des SVG écrits à la main (js/signature.js, TTSig) :
+  3.1 Parchemin Vivant (courbe 12 mois, sceau d'or sur le mois le plus fréquenté, tracé unique à l'apparition),
+  3.2 Tableau d'honneur (classement typographique, barre 4 px, détail au toucher, communauté propre liserée d'or),
+  3.3 Roue des actes (anneau à filets d'or, sceau central, segment soulevé au toucher),
+  3.4 L'Almanach (calendrier lundi-premier, numéros de semaine, palette 0 · 1 · 2 · 3+, meilleur jour liseré d'or).
+- Chaque graphique : une phrase de légende sous le graphique, un équivalent texte sr-only, note de marge au toucher.
+- Couleurs sémantiques uniquement : or = record, bordeaux/rouge = à corriger, vert = validé, marine = neutre.
+- Animations une seule fois à l'apparition ; prefers-reduced-motion respecté (aucune animation).
+- Écarts assumés : le cahier demande des cases de 12 px ; elles sont plus grandes (2,6 rem) pour rester touchables.
+  La palette du calendrier s'arrête à 3+ comme la légende du cahier. L'almanach montre le mois choisi
+  (ou le dernier mois du trimestre / de l'année).
+- 3.5 : absent de la pièce jointe (texte tronqué en 3.4). À fournir.
+- js/chart.js n'est plus appelé ; le fichier reste présent (à supprimer ou non, au choix).
+- Tests : tests/signature.test.js (géométrie, 8 contrôles) ; tests/navigateur.test.js vérifie le rendu et le toucher des quatre graphiques.
+- sw.js : tt-v16-8.
