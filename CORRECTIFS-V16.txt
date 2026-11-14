@@ -39,3 +39,18 @@ CORRECTIFS DE SÉCURITÉ (passe 0)
      masque pas des fichiers : il ne sert qu'à sauter des builds.
 0.4  pdf-lib : contrôle d'intégrité SRI (sha384) et délai de 30 s avec message clair (js/loader.js).
 0.5  Mot de passe provisoire : tirage sans biais (rejet des octets ≥ 244 pour un jeu de 61 caractères). Test : tests/edge.test.js.
+
+CORRECTIFS — PASSE 1
+1.1  Journal d'audit : table admin_audit_log (migration 005, testée puis appliquée). Chaque tentative de réinitialisation
+     et chaque création de compte y est écrite AVANT toute modification ; si le journal échoue, rien n'est fait.
+     Lecture réservée à l'administrateur. Rapport mensuel : select * from admin_audit_monthly_report('2026-11-01').
+     ⚠ Edge Function swift-api déployée en version 4.
+1.2  Limite : 5 tentatives de réinitialisation par heure et par administrateur (contrôle dans swift-api, à partir du journal).
+     Limite : le contrôle n'est pas atomique ; deux requêtes exactement simultanées peuvent passer à 6.
+1.3  Révocation des sessions : déjà assurée par le déclencheur existant sur auth.users (changement de mot de passe →
+     session_epoch + 1 et suppression des refresh tokens). Aucune modification. Reste : le jeton d'accès en cours
+     peut servir jusqu'à son expiration (au plus 1 h) ; l'application le refuse dès qu'elle revérifie la session.
+1.4  Chiffrement de la file hors ligne : NON RÉALISÉ dans cette passe (voir la réponse de l'assistant).
+1.5  Contraste : séparateurs (clair #8c8676, sombre #5f668a) à 3:1 minimum ; anneau de focus à 6:1 (clair) et 8:1 (sombre) ;
+     bouton « danger » en mode sombre : texte blanc sur #a3121f (2:1 auparavant). Rouge de texte en mode sombre conservé (6.4:1).
+     Lighthouse n'a pas pu être exécuté ici : mesure à faire sur le site déployé.

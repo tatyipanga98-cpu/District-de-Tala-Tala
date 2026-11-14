@@ -26,4 +26,9 @@ eq(256 - (256 % CHARS.length), 244, 'seuil de rejet = 244');
 // Vérification de l'ordre de réinitialisation (flag avant mot de passe)
 const body = src.slice(src.indexOf('if (body.reset_password)'), src.indexOf('if (\n!Array.isArray'));
 eq(body.indexOf('must_change_password: true') < body.indexOf('updateUserById'), true, 'marquage avant changement de mot de passe');
+// Passe 1 : journal d'audit et limite de fréquence
+eq(body.indexOf('admin_audit_log') < body.indexOf('updateUserById'), true, 'journal écrit avant toute réinitialisation');
+eq(body.indexOf("gte(\"created_at\", sinceHour)") > 0 && body.indexOf('>= 5') > 0, true, 'limite de 5 par heure contrôlée');
+const createPart = src.slice(src.indexOf('const password = temporaryPassword();'), src.indexOf('await adminClient.auth.admin.createUser'));
+eq(createPart.includes('create_account'), true, 'création journalisée avant createUser (la portion ci-dessus s\'arrête à createUser)');
 console.log(ok + ' réussis, ' + ko + ' échec(s)'); process.exit(ko ? 1 : 0);

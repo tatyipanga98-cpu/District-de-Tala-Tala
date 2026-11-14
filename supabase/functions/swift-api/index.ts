@@ -64,6 +64,9 @@ if (!authorization?.startsWith("Bearer ")) {
 return response({ error: "Connexion requise." }, 401);
 }
 
+// Adresse d'origine de la requête, pour le journal d'audit.
+const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() || req.headers.get("cf-connecting-ip") || null;
+
 const callerClient = createClient(url, anonKey, {
 global: { headers: { Authorization: authorization } },
 auth: { persistSession: false, autoRefreshToken: false },
@@ -129,6 +132,31 @@ return response({ error: "Impossible de vérifier ce compte." }, 500);
 }
 if (!target) {
 return response({ error: "Compte introuvable." }, 404);
+}
+// 1.2 Limite : 5 tentatives de réinitialisation par heure et par administrateur.
+const sinceHour = new Date(Date.now() - 3600 * 1000).toISOString();
+const { count: recentCount, error: countError } = await adminClient
+.from("admin_audit_log")
+.select("id", { count: "exact", head: true })
+.eq("actor_id", userData.user.id)
+.eq("action", "reset_password")
+.gte("created_at", sinceHour);
+if (countError) {
+return response({ error: "Contrôle de la limite impossible. Réessayez." }, 500);
+}
+if ((recentCount ?? 0) >= 5) {
+return response({ error: "Limite atteinte : 5 réinitialisations par heure au maximum. Réessayez plus tard." }, 429);
+}
+// 1.1 Journal : la tentative est écrite AVANT toute modification. Si le journal échoue, rien n'est modifié.
+const { error: resetAuditError } = await adminClient.from("admin_audit_log").insert({
+actor_id: userData.user.id,
+action: "reset_password",
+target_id: targetId,
+detail: { display_name: target.display_name },
+ip,
+});
+if (resetAuditError) {
+return response({ error: "Journal indisponible : aucune réinitialisation effectuée." }, 500);
 }
 const newPassword = temporaryPassword();
 // 1) Marquer d'abord l'obligation de changement : si l'étape suivante échoue, le compte
@@ -214,6 +242,22 @@ for (let i = 0; i < body.users.length; i++) {
 const u = body.users[i];
 const email = emails[i];
 const password = temporaryPassword();
+
+// 1.1 Journal : chaque création est écrite avant d'être faite. Si le journal échoue, aucun compte n'est créé.
+const { error: createAuditError } = await adminClient.from("admin_audit_log").insert({
+actor_id: userData.user.id,
+action: "create_account",
+target_email: email,
+detail: { display_name: u.display_name.trim(), role: u.role, community_id: u.community_id ?? null },
+ip,
+});
+if (createAuditError) {
+return response({
+error: "Journal indisponible : ce compte n'a pas été créé.",
+created,
+failed_email: email,
+}, 500);
+}
 
 const { data: authData, error: authError } =
 await adminClient.auth.admin.createUser({
