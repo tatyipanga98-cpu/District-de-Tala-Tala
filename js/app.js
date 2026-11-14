@@ -115,8 +115,31 @@
       return h("button", { type: "button", class: active ? "active" : "", "aria-current": active ? "page" : null, onclick: function () { go(it[0], {}); } }, navIcon(it[0]), h("span", { text: it[0] === "stats" ? "Stats" : it[1] }));
     }));
   }
+  /* Date et heure en temps réel (horloge de l'appareil, fonctionne hors connexion). */
+  function clockParts() {
+    var d = new Date();
+    var date = d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+    return { date: date.charAt(0).toUpperCase() + date.slice(1), time: d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", second: "2-digit" }), iso: d.toISOString() };
+  }
+  function clockBar() {
+    var c = clockParts();
+    return h("div", { class: "clockbar", role: "timer", "aria-label": "Date et heure" },
+      h("time", { class: "clock-date", datetime: c.iso.slice(0, 10), text: c.date }),
+      h("time", { class: "clock-time", text: c.time }));
+  }
+  function tickClock() {
+    var bars = document.querySelectorAll(".clockbar");
+    if (!bars.length) return;
+    var c = clockParts();
+    bars.forEach(function (b) {
+      var dt = b.querySelector(".clock-date"), tm = b.querySelector(".clock-time");
+      if (dt && dt.textContent !== c.date) { dt.textContent = c.date; dt.setAttribute("datetime", c.iso.slice(0, 10)); }
+      if (tm) tm.textContent = c.time;
+    });
+  }
+  setInterval(tickClock, 1000);
   function shell(content) {
-    TT.replaceAll(root, h("a", { class: "skip", href: "#main", text: "Aller au contenu" }), header(), h("main", { id: "main", tabindex: "-1" }, content), nav());
+    TT.replaceAll(root, h("a", { class: "skip", href: "#main", text: "Aller au contenu" }), header(), clockBar(), h("main", { id: "main", tabindex: "-1" }, content), nav());
   }
   async function manualSync() {
     if (!navigator.onLine) { D.online = false; TT.toast("Pas de connexion Internet.", "bad"); render(); return; }
