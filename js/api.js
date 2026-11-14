@@ -1,7 +1,11 @@
 /* Liaison avec Supabase sans bibliothèque externe (auth + PostgREST + fonction serveur). */
 (function () {
   "use strict";
-  var cfg = window.TT_CONFIG;
+  /* Si config.js n'a pas pu être chargé (fichier manquant ou ancienne copie en cache), on retombe sur les mêmes valeurs publiques. */
+  var cfg = window.TT_CONFIG || (window.TT_CONFIG = {
+    SUPABASE_URL: "https://kpdyowuhxekajsbnormp.supabase.co",
+    SUPABASE_KEY: "sb_publishable_XqmJRVY9qcLuHzDr2kGSww__Jp57pJ3"
+  });
   var KEY = "tt_session";
   var session = null;
 
