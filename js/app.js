@@ -77,13 +77,14 @@
 
   function header() {
     var pending = D.pendingCount();
+    var sync = h("button", { class: "icon-btn", type: "button", id: "sync-btn", disabled: D.syncing, onclick: manualSync,
+      "aria-label": "Synchroniser" + (pending ? " (" + pending + " en attente)" : ""), title: "Synchroniser" });
+    sync.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.9-3.5L4 9"/><path d="M4 4v5h5"/><path d="M4 13a8 8 0 0 0 14.9 3.5L20 15"/><path d="M20 20v-5h-5"/></svg>' + (pending ? '<span class="sync-count">' + Number(pending) + '</span>' : "");
     return h("header", { class: "top" },
       h("div", { class: "brand" }, h("img", { src: "icons/logo-badge.png", alt: "", width: "36", height: "36" }), h("span", { text: "Tala-Tala" }, h("small", { text: "Champ apostolique de Kinshasa-Centre 2" }))),
       h("div", { class: "top-right" },
         h("span", { class: "pill " + (D.online ? "on" : "off"), text: D.online ? "En ligne" : "Hors ligne" }),
-        h("button", { class: "btn small ghost", type: "button", id: "sync-btn", disabled: D.syncing, onclick: manualSync, "aria-label": "Synchroniser" },
-          D.syncing ? "…" : "Synchroniser" + (pending ? " (" + pending + ")" : "")),
-        h("button", { class: "btn small ghost", type: "button", onclick: logout, text: "Quitter" })));
+        sync));
   }
   var NAV_ICONS = {
     account: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>',
@@ -107,8 +108,8 @@
       items = [["home", "Accueil"], ["reports", "Activités"], ["form", "Nouvelle"]];
       if (isCommission() || isAdmin()) items.push(["review", isCommission() ? "Contrôle / Valider" : "Contrôle"]);
       items.push(["stats", "Statistiques"]);
-      if (isAdmin()) items.push(["accounts", "Comptes"]);
     }
+    if (!isObserver()) items.push(["account", "Compte"]);
     return h("nav", { class: "bottom", "aria-label": "Navigation" }, items.map(function (it) {
       var active = state.screen === it[0] || (state.screen === "detail" && it[0] === "reports");
       return h("button", { type: "button", class: active ? "active" : "", "aria-current": active ? "page" : null, onclick: function () { go(it[0], {}); } }, navIcon(it[0]), h("span", { text: it[0] === "stats" ? "Stats" : it[1] }));
@@ -276,7 +277,7 @@
       : [h("p", { text: "Le rapport du service divin n'est pas encore rédigé. " + deadline })];
     return h("section", { class: "card service" + (late ? " late" : "") },
       h("h3", { text: what }), lines,
-      h("button", { class: "btn primary", type: "button", onclick: action, text: draft ? "Continuer le brouillon" : "Rédiger le rapport" }));
+      h("button", { class: "linklike alert-action", type: "button", onclick: action, text: (draft ? "Continuer le brouillon" : "Rédiger le rapport") + " →" }));
   }
 
   /* Deuxième bloc : tableau de bord des communautés (commission et administrateur). */
@@ -1055,8 +1056,11 @@
       h("section", { class: "card" },
         h("h3", { text: D.profile.display_name || "" }),
         h("p", { class: "muted", text: TT.ROLES[role()] || role() }),
-        h("p", { class: "hint", text: "Pour un nouveau mot de passe, adressez-vous à l'administrateur du district." }),
-        h("div", { class: "actions" }, h("button", { class: "btn ghost", type: "button", text: "Se déconnecter", onclick: function () { logout(); } }))),
+        isAdmin() ? h("p", { class: "hint", text: "Créez les comptes et réinitialisez les mots de passe depuis l'écran Comptes." })
+          : h("p", { class: "hint", text: "Pour un nouveau mot de passe, adressez-vous à l'administrateur du district." }),
+        h("div", { class: "actions" },
+          isAdmin() ? h("button", { class: "btn primary", type: "button", text: "Gérer les comptes", onclick: function () { go("accounts", {}); } }) : null,
+          h("button", { class: "btn ghost", type: "button", text: "Se déconnecter", onclick: function () { logout(); } }))),
     ]);
   }
 
@@ -1071,7 +1075,7 @@
       case "form": return formScreen();
       case "stats": return statsScreen();
       case "accounts": if (isAdmin()) return accountsScreen(); break;
-      case "account": if (isObserver()) return accountScreen(); break;
+      case "account": return accountScreen();
     }
     homeScreen();
   }

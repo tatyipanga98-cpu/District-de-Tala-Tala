@@ -805,3 +805,35 @@ select, textarea {
   border: 0; border-bottom: 1px solid var(--reg-ink); border-radius: 0;
   background: transparent; padding-left: 0; padding-right: 0;
 }
+
+/* ===== Registre enluminé — étape 2 : en-tête, carte d'alerte, chiffres ===== */
+header.top {
+  height: 56px; min-height: 56px; box-sizing: border-box; padding-top: 0; padding-bottom: 0;
+  display: flex; align-items: center; justify-content: space-between; gap: .5rem; overflow: hidden;
+}
+header.top .brand small { display: none; }
+header.top .brand img {
+  width: 36px; height: 36px; box-sizing: border-box; padding: 2px; border-radius: 50%;
+  border: 1px solid var(--reg-gold); background: #fff;
+}
+header.top .icon-btn {
+  position: relative; width: 44px; height: 44px; display: inline-grid; place-items: center;
+  background: none; border: 0; color: #fff; cursor: pointer; padding: 0; border-radius: var(--r);
+}
+header.top .icon-btn:focus-visible { box-shadow: var(--focus); }
+header.top .icon-btn:disabled { opacity: .6; cursor: default; }
+header.top .sync-count {
+  position: absolute; top: 4px; right: 2px; min-width: 16px; height: 16px; padding: 0 3px; box-sizing: border-box;
+  border-radius: 8px; background: var(--reg-gold); color: #fff; font: 600 .7rem/16px var(--sans); text-align: center;
+}
+
+.card.service:not(.ok) {
+  background: var(--card); box-shadow: none; border: 0; border-left: 3px solid var(--reg-rubric);
+}
+.alert-action {
+  background: none; border: 0; padding: .4rem 0; min-height: 44px; cursor: pointer;
+  font: 600 1rem/1.3 var(--sans); color: var(--reg-marine); text-align: left;
+}
+.alert-action:focus-visible { box-shadow: var(--focus); border-radius: 4px; }
+
+.tile .num { font: 500 1.15rem/1 var(--serif); color: var(--reg-ink); }

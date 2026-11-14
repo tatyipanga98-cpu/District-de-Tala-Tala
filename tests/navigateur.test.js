@@ -131,7 +131,7 @@ const navTo = async (p, label) => { await p.evaluate((l) => { const b = [...docu
   { const st = state('community_clerk', mkReports(2));
     const { ctx, p, errs } = await open(b, st);
     await p.waitForTimeout(300);
-    await p.locator('button', { hasText: 'Quitter' }).first().click(); await p.waitForTimeout(300);
+    await navTo(p, 'Compte'); await p.locator('button', { hasText: 'Se déconnecter' }).first().click(); await p.waitForTimeout(300);
     await p.locator('.overlay button', { hasText: 'Quitter' }).click(); await p.waitForTimeout(800);
     const session = await p.evaluate(() => localStorage.getItem('tt_session'));
     check('déconnexion : session supprimée de l\'appareil', session === null);
@@ -150,7 +150,7 @@ const navTo = async (p, label) => { await p.evaluate((l) => { const b = [...docu
   { const others = [{ id: 'u2', display_name: 'Armine Lubamba', role: 'community_clerk', community_id: 'c1', active: true }];
     const st = state('district_admin', [], others);
     const { ctx, p, errs } = await open(b, st, { viewport: { width: 390, height: 844 } });
-    await navTo(p, 'Comptes');
+    await navTo(p, 'Compte'); await p.locator('button', { hasText: 'Gérer les comptes' }).click(); await p.waitForTimeout(400);
     const btns = await p.locator('button', { hasText: 'Nouveau mot de passe' }).count();
     check('comptes : bouton réinitialisation pour les autres comptes seulement', btns === 1, 'n=' + btns);
     check('comptes : bouton sauvegarde présent', (await p.locator('button', { hasText: 'Télécharger une sauvegarde' }).count()) === 1);
