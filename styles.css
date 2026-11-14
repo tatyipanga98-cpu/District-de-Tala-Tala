@@ -909,19 +909,6 @@ main[tabindex="-1"]:focus { outline: none; }
 
 /* ===== Mode nuit (choix dans Compte) — les jetons --reg-* ont leur version sombre plus haut ===== */
 
-/* Connexion : panneau de marque en dégradé bleu nuit vers or, filet doré décoratif. */
-.auth-brand {
-  position: relative; overflow: hidden; isolation: isolate;
-  background:
-    radial-gradient(60% 55% at 14% 6%, rgba(176, 141, 74, .40), transparent 70%),
-    radial-gradient(50% 45% at 96% 100%, rgba(176, 141, 74, .28), transparent 70%),
-    linear-gradient(160deg, #021c9d 0%, #0b1a3f 60%, #1d2b4a 100%);
-}
-.auth-brand::after {
-  content: ""; position: absolute; inset: 10px; z-index: -1; pointer-events: none;
-  border: 1px solid rgba(217, 181, 106, .45); border-radius: 16px;
-}
-
 /* Progression : barre fine dorée, sans animation perpétuelle. */
 .rate-row { padding: .5rem 0; }
 .rate-head { display: flex; justify-content: space-between; gap: .5rem; font-size: .92rem; color: var(--ink); }
@@ -935,3 +922,166 @@ main[tabindex="-1"]:focus { outline: none; }
   body { font-family: Georgia, "Times New Roman", serif; }
   h1, h2, h3 { font-family: Georgia, "Times New Roman", serif; }
 }
+
+/* ===== Inspiration « Famille IPANGA » : ardoise, or, papier chaud =====
+   Mêmes codes que l'application de finances : bleu ardoise, filets et pastilles dorés,
+   cartes arrondies à bordure chaude, séparateurs en pointillés, titres Georgia. */
+:root {
+  --navy: #1d2b4a; --navy-deep: #131d34;
+  --head: #1d2b4a; --head-2: #2e3f66; --head-ink: #1d2b4a;
+  --paper: #f7f5f0; --reg-paper: #f7f5f0; --reg-marine: #1d2b4a; --reg-ink: #1d2b4a;
+  --card-tint: #fbf9f3;
+  --gold: #b08d4a; --gold-light: #efe4cc; --line: #e4ded0; --field: #cfc7b5;
+  --serif: Georgia, "Times New Roman", "Noto Serif", serif;
+  --r: 9px; --r-lg: 12px;
+  --lift: 0 1px 2px rgba(29, 43, 74, .06);
+  --stamp: rgba(29, 43, 74, .85);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0f1422; --reg-paper: #0f1422; --card: #171e32; --card-tint: #1b2339;
+    --ink: #f1ede2; --ink-2: #d6d3c8; --muted: #a9b0c6;
+    --navy: #3b5ba5; --navy-deep: #2c4786;
+    --head: #151c2f; --head-2: #1f2a47; --head-ink: #f1ede2;
+    --reg-marine: #9db4e8; --reg-ink: #f1ede2;
+    --gold: #d9b56a; --gold-light: #3a3425; --line: #2a3350; --field: #3d4768;
+    --rule: #5f668a; --rule-strong: #2a3350;
+    --lift: none;
+  }
+}
+
+body { background-color: var(--paper); color: var(--ink); }
+body::before { opacity: .02; }
+h1, h2 { color: var(--head-ink); }
+.card h3 { color: var(--head-ink); }
+
+/* En-tête et bandeau d'accueil : ardoise, anneau et filet dorés */
+header.top { background: var(--head); box-shadow: 0 2px 10px rgba(19, 29, 52, .28); }
+header.top .brand img { border: 2px solid var(--gold); }
+.hero { background: linear-gradient(160deg, var(--head) 0%, var(--head-2) 100%); border-bottom: 3px solid var(--gold); }
+.hero h2 { color: #fff; }
+
+/* Cartes arrondies à bordure chaude */
+.card { border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--lift); }
+.card.alert { border-color: var(--warn); }
+.title-row { border-bottom: 1px solid var(--line); }
+
+/* Listes et tableaux : séparateurs en pointillés */
+.list, .tiles { border-top: 1px dashed var(--line); }
+.row-item, .tile, .kv { border-bottom: 1px dashed var(--line); }
+th, td { border-bottom: 1px dashed var(--line); }
+.kv:last-child { border-bottom: none; }
+
+/* Boutons et champs : coins arrondis, champs encadrés */
+.btn { border-radius: 10px; }
+input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not([type="file"]),
+select, textarea {
+  border: 1px solid var(--field); border-radius: 9px; background: var(--card);
+  padding: .6rem .7rem;
+}
+input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not([type="file"]):focus,
+select:focus, textarea:focus { border-color: var(--sky); }
+label, legend { font-weight: 600; font-size: .88rem; }
+
+/* États : pastilles arrondies teintées */
+.chip { padding: .15rem .6rem; border-radius: 999px; background: var(--gold-light); color: var(--head-ink); font-variant-caps: normal; letter-spacing: 0; }
+.chip::before { display: none; }
+.chip.good { background: var(--good-bg); color: var(--good); }
+.chip.warn { background: var(--warn-bg); color: var(--warn); }
+.chip.bad { background: var(--bad-bg); color: var(--bad); }
+.chip.info { background: var(--info-bg); color: var(--info); }
+
+/* Navigation basse : icône et filet dorés sur l'onglet actif */
+nav.bottom { background: var(--card); border-top: 1px solid var(--line); box-shadow: none; }
+nav.bottom button.active { color: var(--head-ink); }
+nav.bottom button.active::before { background: var(--gold); }
+nav.bottom button.active .ni { color: var(--gold); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) nav.bottom button.active { color: var(--head-ink); }
+  :root:not([data-theme="light"]) nav.bottom button.active::before { background: var(--gold); }
+  :root:not([data-theme="light"]) .tile .num, :root:not([data-theme="light"]) .step-no { color: var(--gold); }
+  :root:not([data-theme="light"]) .chip.info { color: var(--info); }
+}
+.tabs button.active { background: var(--navy); border-color: var(--navy); }
+.reg-progress > span { background: var(--gold); }
+
+/* Connexion : carte blanche arrondie sur dégradé ardoise → or (comme l'application de finances) */
+.auth {
+  background:
+    radial-gradient(55% 40% at 92% 100%, rgba(176, 141, 74, .45), transparent 70%),
+    radial-gradient(50% 40% at 6% 0%, rgba(239, 228, 204, .12), transparent 70%),
+    linear-gradient(160deg, #1d2b4a 0%, #2e3f66 60%, #b08d4a 140%);
+}
+.auth-brand { background: none; }
+.auth-brand .login-logo { border: 2px solid var(--gold); }
+.auth-form {
+  background: var(--card); color: var(--ink); border-radius: 18px;
+  margin: 0 1rem 1.5rem; flex: 0 0 auto; padding: 1.6rem 1.35rem 1.3rem;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .28);
+}
+.auth-form::before { display: none; }
+@media (min-width: 900px) {
+  .auth { align-items: center; }
+  .auth-brand { flex: 1 1 50%; min-height: 0; }
+  .auth-form { flex: 0 0 29rem; margin: 2rem 4rem 2rem 0; padding: 2.2rem 2rem 1.8rem; }
+}
+
+/* Focus programmatique de <main> : aucun anneau (le liseré bleu apparaissait aux angles). */
+main[tabindex="-1"]:focus, main[tabindex="-1"]:focus-visible { outline: none; box-shadow: none; }
+
+/* >>> MODE-SOMBRE-GENERE (tools/mode-sombre.py) — ne pas modifier à la main */
+:root[data-theme="dark"] {
+    --paper: #0a0c18;
+    --card: #111528;
+    --card-tint: #13182c;
+    --ink: #eef2fc;
+    --ink-2: #c5cee6;
+    --muted: #9aa8c9;
+    --navy: #1f44b8;
+    --navy-deep: #040a24;
+    --sky: #3fb3ff;
+    --sky-soft: #152a44;
+    --red: #ff5a5a;
+    --rule: #5f668a;
+    --focus: 0 0 0 3px rgba(63, 179, 255, .9);
+    --rule-strong: #2c3350;
+    --rule-margin: #8b3a3a;
+    --good: #8ff0b4; --good-bg: #0f3223;
+    --warn: #ffd27a; --warn-bg: #3a2a0c;
+    --bad: #ff9aa6; --bad-bg: #3f1420;
+    --info: #a9ccff; --info-bg: #13294f;
+    --lift: none;
+    color-scheme: dark;
+  }
+:root[data-theme="dark"] .btn.primary:hover { background: #5585e6; border-color: #5585e6; }
+:root[data-theme="dark"] .btn.danger { background: #a3121f; border-color: #a3121f; color: #fff; }
+  :root[data-theme="dark"] .btn.danger:hover { background: #b8182a; border-color: #b8182a; }
+:root[data-theme="dark"] .btn.ghost { color: var(--sky); }
+  :root[data-theme="dark"] .btn.ghost:hover { background: rgba(63, 179, 255, .12); color: var(--sky); }
+:root[data-theme="dark"] .linklike { color: var(--sky); }
+:root[data-theme="dark"] .step-no { color: var(--sky); }
+:root[data-theme="dark"] .chip.info { color: #9cc6ff; }
+:root[data-theme="dark"] .tile .num { color: var(--sky); }
+:root[data-theme="dark"] .card.is-validated .stamp {
+    color: var(--sky); opacity: .7; mix-blend-mode: screen;
+  }
+:root[data-theme="dark"] { --sig-gold: #f0c75e; --sig-paper: #111528; --sig-l1: #1d2a52; --sig-l2: #3350a0; --sig-l3: #3a58b8; }
+:root[data-theme="dark"] nav.bottom button.active { color: var(--sky); }
+  :root[data-theme="dark"] nav.bottom button.active::before { background: var(--sky); }
+:root[data-theme="dark"] .pw-toggle { color: var(--sky); }
+:root[data-theme="dark"] { --reg-paper: #0a0c18; --reg-ink: #eef2fc; --reg-marine: #1f44b8; --reg-gold: #d9b56a; --reg-rubric: #ff5a5a; }
+:root[data-theme="dark"] {
+    --paper: #0f1422; --reg-paper: #0f1422; --card: #171e32; --card-tint: #1b2339;
+    --ink: #f1ede2; --ink-2: #d6d3c8; --muted: #a9b0c6;
+    --navy: #3b5ba5; --navy-deep: #2c4786;
+    --head: #151c2f; --head-2: #1f2a47; --head-ink: #f1ede2;
+    --reg-marine: #9db4e8; --reg-ink: #f1ede2;
+    --gold: #d9b56a; --gold-light: #3a3425; --line: #2a3350; --field: #3d4768;
+    --rule: #5f668a; --rule-strong: #2a3350;
+    --lift: none;
+  }
+:root[data-theme="dark"] nav.bottom button.active { color: var(--head-ink); }
+  :root[data-theme="dark"] nav.bottom button.active::before { background: var(--gold); }
+  :root[data-theme="dark"] .tile .num, :root[data-theme="dark"] .step-no { color: var(--gold); }
+  :root[data-theme="dark"] .chip.info { color: var(--info); }
+/* <<< MODE-SOMBRE-GENERE */

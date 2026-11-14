@@ -1,6 +1,6 @@
 /* Service worker : l'application s'ouvre sans Internet. Les données ne sont jamais mises en cache ici
    (elles sont gérées par l'application dans IndexedDB). */
-var VERSION = "tt-v16-11";
+var VERSION = "tt-v16-12";
 var SHELL = ["./", "./index.html", "./styles.css", "./config.js", "./js/stats.js", "./js/chart.js", "./js/signature.js", "./js/theme.js","./js/pdf.js", "./js/schedule.js", "./js/loader.js", "./vendor/pdf-lib.min.js", "./js/api.js", "./js/store.js", "./js/ui.js", "./js/data.js", "./js/app.js", "./manifest.webmanifest", "./icons/icon-192.png", "./icons/icon-512.png", "./icons/icon-maskable-512.png", "./icons/apple-touch-icon.png", "./icons/logo.png", "./icons/logo-badge.png"];
 
 self.addEventListener("install", function (e) {
