@@ -1,2 +1,31 @@
+# Configuration Netlify de l'application Tala-Tala (V16).
 [build]
+  publish = "."
   functions = "functions"
+
+# Dossiers techniques : jamais accessibles depuis le site public.
+# (« ignore » ne sert qu'à sauter des builds ; il ne masque pas de fichiers. On répond donc 404.)
+[[redirects]]
+  from = "/tests/*"
+  to = "/404.html"
+  status = 404
+
+[[redirects]]
+  from = "/migrations/*"
+  to = "/404.html"
+  status = 404
+
+[[redirects]]
+  from = "/supabase/*"
+  to = "/404.html"
+  status = 404
+
+# En-têtes de sécurité, envoyés par le serveur. frame-ancestors ne fonctionne que dans un en-tête HTTP,
+# pas dans une balise meta : il empêche l'intégration de l'application dans un autre site (clickjacking).
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://kpdyowuhxekajsbnormp.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"

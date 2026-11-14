@@ -6,7 +6,7 @@
 <title>District Tala-Tala — Statistiques</title>
 <meta name="theme-color" content="#021c9d">
 <meta name="description" content="Rapports et statistiques du district de Tala-Tala, champ apostolique de Kinshasa-Centre 2">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://kpdyowuhxekajsbnormp.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://kpdyowuhxekajsbnormp.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -34,17 +34,6 @@
 <script defer src="js/data.js"></script>
 <script defer src="js/app.js"></script>
 
-<script>
-  window.__loadPdfLib = function () {
-    if (window.PDFLib) return Promise.resolve(window.PDFLib);
-    return new Promise((resolve, reject) => {
-      const s = document.createElement('script');
-      s.src = 'vendor/pdf-lib.min.js';
-      s.onload = () => resolve(window.PDFLib);
-      s.onerror = reject;
-      document.head.appendChild(s);
-    });
-  };
-</script>
+<script src="js/loader.js"></script>
 </body>
 </html>

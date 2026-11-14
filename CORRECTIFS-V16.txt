@@ -25,3 +25,17 @@ VERSION 16 — CE QUI CHANGE
    - Sauvegarde JSON : app_version v16.
 
 À FAIRE PAR VOUS (Supabase, tableau de bord) : activer « Leaked password protection » (Authentication > Policies).
+
+CORRECTIFS DE SÉCURITÉ (passe 0)
+0.1  Edge Function swift-api : réinitialisation — le profil est marqué « changement obligatoire » AVANT le changement
+     de mot de passe. Un échec ne laisse jamais un compte avec un mot de passe inconnu sans obligation de changement.
+     ⚠ Modification à déployer sur Supabase (la version en ligne reste l'ancienne tant qu'elle n'est pas redéployée).
+0.2  Content-Security-Policy : le script inline du chargement PDF est sorti dans js/loader.js. Les scripts ne sont plus
+     autorisés en « unsafe-inline ». frame-ancestors 'none' est envoyé comme en-tête HTTP (netlify.toml), car une balise
+     meta l'ignore. Style : 'unsafe-inline' conservé, car l'application utilise des attributs style= ; le retirer
+     demanderait une refonte des écrans. Pas de nonce : le site est statique, il n'y a pas de rendu serveur pour l'injecter.
+     report-to non ajouté : il exige un point de réception des rapports, qui n'existe pas encore.
+0.3  Dossiers tests/, migrations/ et supabase/ : redirigés vers une page 404 (netlify.toml). Le réglage « ignore » ne
+     masque pas des fichiers : il ne sert qu'à sauter des builds.
+0.4  pdf-lib : contrôle d'intégrité SRI (sha384) et délai de 30 s avec message clair (js/loader.js).
+0.5  Mot de passe provisoire : tirage sans biais (rejet des octets ≥ 244 pour un jeu de 61 caractères). Test : tests/edge.test.js.

@@ -22,11 +22,20 @@ headers: { ...corsHeaders, "Content-Type": "application/json" },
 });
 }
 
+// Mot de passe provisoire de 20 caractères. Tirage sans biais : on n'accepte un octet
+// que s'il tombe dans la plus grande suite multiple de 61 (244 sur 256), sinon on retire.
 function temporaryPassword() {
 const chars =
 "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$";
-const bytes = crypto.getRandomValues(new Uint8Array(20));
-return Array.from(bytes, b => chars[b % chars.length]).join("");
+const limit = 256 - (256 % chars.length);
+const out: string[] = [];
+while (out.length < 20) {
+const bytes = crypto.getRandomValues(new Uint8Array(40));
+for (const b of bytes) {
+if (b < limit && out.length < 20) out.push(chars[b % chars.length]);
+}
+}
+return out.join("");
 }
 
 Deno.serve(async (req) => {
@@ -122,16 +131,19 @@ if (!target) {
 return response({ error: "Compte introuvable." }, 404);
 }
 const newPassword = temporaryPassword();
-const { error: updError } = await adminClient.auth.admin.updateUserById(targetId, { password: newPassword });
-if (updError) {
-return response({ error: "Réinitialisation impossible : " + updError.message }, 500);
-}
+// 1) Marquer d'abord l'obligation de changement : si l'étape suivante échoue, le compte
+//    ne reste jamais avec un mot de passe inconnu ET sans obligation de le changer.
 const { error: flagError } = await adminClient
 .from("profiles")
 .update({ must_change_password: true })
 .eq("id", targetId);
 if (flagError) {
-return response({ error: "Mot de passe modifié mais le profil n'a pas pu être marqué. Renouvelez l'opération." }, 500);
+return response({ error: "Réinitialisation impossible : le profil n'a pas pu être mis à jour. Aucun mot de passe n'a été modifié." }, 500);
+}
+// 2) Puis remplacer le mot de passe.
+const { error: updError } = await adminClient.auth.admin.updateUserById(targetId, { password: newPassword });
+if (updError) {
+return response({ error: "Réinitialisation impossible : " + updError.message + ". Le compte devra changer son mot de passe à sa prochaine connexion." }, 500);
 }
 return response({
 message: "Mot de passe provisoire généré. Transmettez-le de façon confidentielle.",
