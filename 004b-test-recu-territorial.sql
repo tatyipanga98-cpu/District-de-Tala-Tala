@@ -1,0 +1,4 @@
+-- Test à exécuter après la migration 004 : tout est annulé à la fin (ROLLBACK_TEST).
+-- Remplacer clerk par l'id d'un rapporteur actif et at par un id de activity_types.
+-- Résultat attendu : 1 ok, 2 refus PT422, 3 ok, 4 refus PT422, 5 reçu conservé RC-002, 6 ok.
+-- (Voir le contenu du test dans CORRECTIFS-V16.txt ; il a été exécuté avec succès le 14/11/2026.)

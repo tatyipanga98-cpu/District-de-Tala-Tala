@@ -1,0 +1,40 @@
+VERSION 15 — REFONTE VISUELLE « REGISTRE »
+
+Idée directrice
+L'application ressemble à un registre de district tenu avec soin : bleu marine du logo, filets fins, chiffres sérif,
+lignes plutôt que cartes. Les structures (filets, colonnes de chiffres) portent l'information.
+
+Charte
+- Bleu marine #021c9d (en-tête, boutons, titres), bleu clair #009bfe (focus et accents), rouge #ff0000 réservé à
+  l'astérisque des champs obligatoires et aux alertes. Papier #f4f6fb, encre #0c1638.
+- Mode sombre : fond #040a24, panneaux #0a1638, bleu de marque adouci pour rester lisible.
+
+Typographie
+- Noto Serif pour les titres et les grands chiffres ; Noto Sans pour le texte. Ce sont des polices du système
+  (présentes sur Android) : rien n'est téléchargé, l'application fonctionne hors connexion.
+- Chiffres tabulaires dans les tableaux, chiffres sérif dans les bandeaux.
+
+Écrans
+- Connexion : sur ordinateur, panneau bleu marine avec le logo officiel et le nom du district, formulaire à droite ;
+  sur téléphone, le panneau passe en haut.
+- En-tête : logo, nom « Tala-Tala » et sous-titre « Champ apostolique de Kinshasa-Centre 2 » (masqué sur petit écran).
+- Accueil : bandeau bleu marine (bienvenue, mois en cours, activités validées et offrandes en chiffres sérif séparés
+  par des filets). « À traiter » en lignes filetées avec le nombre à droite.
+- Activités : lignes filetées au lieu de cartes ; date et type sur deux lignes ; statut en texte coloré avec un point.
+- Fiche : titre sérif, date en sous-titre, paires clé-valeur séparées par des filets.
+- Formulaire : sections numérotées (chiffre sérif, sans cercle), astérisques, barre d'actions collante.
+- Navigation basse : indicateur bleu en haut de l'onglet actif.
+- Boîtes de dialogue et messages : bords nets, fond bleu marine profond.
+
+Mouvement
+- Une seule animation : l'apparition du bandeau d'accueil. Supprimée si l'utilisateur réduit les animations.
+
+Ce qui n'a pas changé
+- Toute la logique (calculs, synchronisation, sécurité, PDF) est inchangée.
+- Les PDF gardent leur mise en page actuelle (déjà sobre et officielle).
+
+Vérifications
+- Tests navigateur : tous réussis (écrans, PDF, recherche, déconnexion, administrateur, 360/768/1280 px, clair/sombre).
+- Captures vérifiées : connexion, accueil, liste, fiche, formulaire, sur téléphone et ordinateur, clair et sombre.
+- Limite : les captures ont été faites sans Noto installée (repli sur Georgia/Times). Sur Android, les titres
+  s'afficheront en Noto Serif, légèrement différente. Le rendu réel sur téléphone reste à valider.

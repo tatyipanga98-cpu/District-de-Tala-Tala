@@ -1,0 +1,89 @@
+APPLICATION DE STATISTIQUES — DISTRICT DE TALA-TALA
+Champ apostolique de Kinshasa-Centre 2 — Version 16
+
+SOMMAIRE
+1. Contenu du dossier
+2. Mise en ligne (Netlify)
+3. Retour arrière (revenir à une version stable)
+4. Base de données Supabase : migrations et contrôles
+5. Sauvegarde et restauration
+6. Sessions, mots de passe et données locales
+7. Règles métier et calculs
+8. Tests
+9. Limites connues et actions restant à faire
+
+1. CONTENU DU DOSSIER
+- index.html, styles.css, manifest.webmanifest, sw.js, config.js : application (à déployer).
+- js/ : api.js (liaison Supabase), store.js (stockage local), ui.js (outils d'affichage),
+  data.js (file d'attente et synchronisation), stats.js (calculs), schedule.js (règle des services divins), chart.js (graphiques), pdf.js (rapports PDF), app.js (écrans).
+- vendor/pdf-lib.min.js : bibliothèque PDF embarquée (licence MIT, vendor/pdf-lib-LICENSE.md). Aucun appel réseau pour les PDF.
+- icons/ : logo officiel et icônes.
+- migrations/ : scripts SQL et notes de migration (voir section 4).
+- supabase/functions/swift-api/index.ts : fonction serveur de gestion des comptes (déployée dans Supabase, version 2).
+- tests/ : tests automatiques des calculs et des PDF (stats.test.js), de la règle des services divins (schedule.test.js) et tests navigateur (navigateur.test.js, v16.test.js).
+
+2. MISE EN LIGNE (NETLIFY)
+a) Décompressez l'archive tala-tala-v16.zip dans un dossier.
+b) Ouvrez le site Netlify du district, onglet « Deploys ».
+c) Glissez-déposez le DOSSIER DÉCOMPRESSÉ (celui qui contient index.html à la racine) dans la zone de dépôt.
+d) Attendez la fin du déploiement (statut « Published »).
+e) Vérifiez : ouvrez le site, connectez-vous, puis ouvrez Statistiques et contrôlez que le bouton « Télécharger la synthèse (PDF) » est présent.
+Le dossier « tests/ » et « migrations/ » sont publiés avec le site ; ils ne contiennent aucun mot de passe ni clé secrète.
+
+3. RETOUR ARRIÈRE
+- Netlify : onglet « Deploys », choisissez le déploiement précédent (version 12 ou la dernière version stable) et cliquez « Publish deploy ». Effet immédiat.
+- Les utilisateurs ayant déjà l'application ouverte la recevront à leur prochaine ouverture (le service worker se met à jour automatiquement).
+- Base de données : les modifications V12/V13 sont additives. Voir la section 5 pour restaurer des données.
+- Fonction serveur : la version 1 était identique à la version 2 sans l'action « reset_password ». Si l'écran de réinitialisation pose problème, il suffit de ne pas l'utiliser ; la création de comptes n'est pas affectée.
+
+4. BASE DE DONNÉES SUPABASE — MIGRATIONS ET CONTRÔLES
+- migrations/001-v12-integrite-securite.sql : code de rapport, intervenants (un officiant, cinq assistants au maximum),
+  transitions de statut, fonctions transactionnelles save_report et review_report, verrouillage des fiches validées.
+  Cette migration est déjà appliquée en production. Ne la rejouez pas sans sauvegarde.
+- migrations/002-tests-transactionnels-base.sql : 40 vérifications de la base. Elles se terminent par une erreur volontaire
+  qui annule tout : sans effet sur les données. À utiliser en environnement de test.
+- migrations/export-definitions-production.sql : affiche les définitions réelles des fonctions et politiques d'accès.
+- migrations/003-edge-function-swift-api.md : description de la fonction serveur de gestion des comptes.
+- Contrôles de sécurité : tableau de bord Supabase > Advisors. Restent ouverts : la protection contre les mots de passe divulgués (à activer, voir 9).
+
+5. SAUVEGARDE ET RESTAURATION
+Sauvegarde applicative (recommandée, chaque mois et avant toute mise à jour) :
+- Connectez-vous avec le compte administrateur, écran « Comptes », bouton « Télécharger une sauvegarde (JSON) ».
+- Le fichier contient communautés, types d'activités, comptes (sans mots de passe), fiches, intervenants, actes, contrôles et validations.
+- Conservez-le hors de l'appareil (disque externe, messagerie sécurisée).
+Sauvegarde de la base (schéma de secours) : le schéma backup_20261024 contient une copie des tables avant la migration V12.
+Restauration d'une donnée précise (procédure manuelle, à faire avec un technicien) :
+1. Ne jamais restaurer en écrasant la production sans copie préalable de l'état actuel.
+2. Retrouvez la fiche dans le fichier JSON (champ « reports », identifiant « id », numéro « report_code »).
+3. Comparez avec la base actuelle, puis réinsérez ou corrigez uniquement les lignes concernées (SQL, transaction avec ROLLBACK pour tester d'abord).
+4. Notez la correction dans le rapport de validation.
+Les sauvegardes automatiques de la plateforme Supabase dépendent de votre formule : vérifiez-les dans le tableau de bord du projet.
+
+6. SESSIONS, MOTS DE PASSE ET DONNÉES LOCALES
+- Expiration : 30 minutes sans activité, la session est fermée. Une saisie non enregistrée retarde la fermeture jusqu'à son enregistrement ou son abandon.
+- Déconnexion : la copie locale des fiches et du profil est effacée. Les saisies non envoyées sont CONSERVÉES sur l'appareil et seront envoyées à la prochaine connexion avec le même compte.
+- Mots de passe : bouton « Afficher / Masquer » sur tous les champs de mot de passe. Le mot de passe n'est jamais écrit dans les journaux.
+- Mot de passe oublié : lien envoyé par e-mail. Réinitialisation par l'administrateur : écran « Comptes » > « Nouveau mot de passe » (provisoire, affiché une seule fois, changement obligatoire à la connexion).
+- Protection du navigateur : politique de sécurité de contenu (CSP) limitant les scripts à l'application et à Supabase.
+- Limites : la session est conservée dans le stockage local du navigateur (nécessaire au fonctionnement hors connexion). Sur un appareil partagé, déconnectez-vous en fin d'utilisation.
+
+7. RÈGLES MÉTIER ET CALCULS
+- Identifiant de rapport : « TT-AAAA-NNNNNN », attribué par la base à la création, immuable, identique hors connexion et après synchronisation.
+- Intervenants à l'autel de grâce : un officiant (obligatoire), cinq assistants au maximum (contrôlé dans l'interface, lors de l'envoi et dans la base).
+- Statuts : brouillon, transmis, en contrôle, contrôlé, validé ; corrections à demander ; renvoi pour correction.
+- Une fiche validée ne peut plus être modifiée. Une correction liée remplace l'original dans les statistiques une fois validée.
+- Statistiques : chaque activité est comptée une seule fois, dans la période de sa date d'activité. Une fiche d'origine remplacée par une correction retenue pour la même période n'est pas comptée. Les offrandes CDF et USD ne sont jamais additionnées entre elles. Les présences additionnent les effectifs de chaque service (une personne présente à deux services est comptée deux fois, selon la règle en vigueur).
+- Les chiffres officiels sont ceux des fiches validées (option par défaut « Fiches validées »).
+- Les PDF et les exports CSV utilisent exactement les mêmes calculs que l'écran.
+
+8. TESTS
+- Calculs et PDF : node tests/stats.test.js (depuis le dossier de l'application ; Node.js 18 ou plus). Résultat attendu : 32 réussis, 0 échec.
+- Écrans, PDF, recherche, pagination, déconnexion, administrateur, mise en page : tests navigateur, voir tests/navigateur.test.js
+  (serveur statique local sur le port 8813 et Playwright requis).
+- Les résultats et les limites des tests figurent dans RAPPORT-VALIDATION.txt.
+
+9. LIMITES CONNUES ET ACTIONS RESTANT À FAIRE (à votre charge)
+- Activer « Leaked password protection » : Supabase > Authentication > Passwords (action sur le tableau de bord, non réalisable depuis le code).
+- Supprimer le projet Supabase d'essai bibwdfmefbnocaofvjey, après validation de la version 13 en production.
+- Tester sur un téléphone Android réel et sur une connexion instable (voir RAPPORT-VALIDATION.txt).
+- Les sessions déjà ouvertes sur un autre appareil ne sont pas coupées par une réinitialisation de mot de passe (voir migrations/003).

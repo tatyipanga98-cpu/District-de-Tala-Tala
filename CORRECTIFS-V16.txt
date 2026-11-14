@@ -1,0 +1,27 @@
+VERSION 16 — CE QUI CHANGE
+
+1. Services divins
+   - Un rappel apparaît sur l'accueil des rapporteurs (communautés) pour le dernier service divin terminé :
+     mercredi 6 h 00 - 6 h 30 (rapport avant mercredi à 10 h), dimanche 9 h 30 - 11 h 00 (rapport avant dimanche à 12 h).
+   - Il ne concerne que les types « Service divin ... ». Réunions, mariages, conférences, etc. : aucun message.
+   - Heure de Kinshasa (UTC+1). Une fois le rapport transmis, le rappel devient un simple remerciement.
+   - « Rédiger le rapport » ouvre le formulaire avec la date du culte et le type « Service divin ordinaire » déjà choisis.
+
+2. Salutation : « Bonjour, Sr. Armine. » pour Armine Lubamba (communauté Source de vie). Autres rapporteurs : prénom.
+   Pour ajouter un titre : config.js, ligne HONORIFICS (nom du compte en minuscules).
+
+3. Numéro de reçu territorial (facultatif, UNIQUE)
+   - Base de données : migration 004 (colonne territorial_receipt, index unique sans tenir compte des majuscules,
+     contrôle dans save_report avec message clair). DÉJÀ APPLIQUÉE sur le projet Supabase le 14/11/2026 et testée
+     (création, doublon refusé, modification, fiche sans reçu, conservation du reçu).
+   - Une fiche de correction peut reprendre le numéro de la fiche validée qu'elle remplace.
+   - Application : champ dans le formulaire, vérification sur l'appareil avant envoi, affichage dans la fiche.
+
+4. Corrections techniques
+   - sw.js : erreur de syntaxe corrigée (l'application hors connexion ne pouvait pas s'installer) ; liste des fichiers à jour.
+   - index.html : le bon fichier de graphiques (chart.js) est chargé.
+   - Export PDF : la bibliothèque est chargée avant la création du PDF.
+   - Tests : horloge fixée sur octobre 2026 pour les données d'essai.
+   - Sauvegarde JSON : app_version v16.
+
+À FAIRE PAR VOUS (Supabase, tableau de bord) : activer « Leaked password protection » (Authentication > Policies).
