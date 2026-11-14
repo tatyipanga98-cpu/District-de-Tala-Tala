@@ -12,6 +12,7 @@
   function isCommunity() { return role() === "community_clerk" || role() === "community_leader"; }
   function isCommission() { return role() === "commission" || role() === "commission_deputy"; }
   function isAdmin() { return role() === "district_admin"; }
+  function isObserver() { return role() === "district_leader" || role() === "district_deputy"; }
   function canEditReport(r) {
     if (r.status === "validated") return false;
     if (isCommunity()) return r.status === "draft" || r.status === "needs_correction";
@@ -85,6 +86,7 @@
         h("button", { class: "btn small ghost", type: "button", onclick: logout, text: "Quitter" })));
   }
   var NAV_ICONS = {
+    account: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>',
     home: '<path d="M3 11l9-8 9 8v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
     reports: '<path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h7"/>',
     form: '<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>',
@@ -98,10 +100,15 @@
     return sp;
   }
   function nav() {
-    var items = [["home", "Accueil"], ["reports", "Activités"], ["form", "Nouvelle"]];
-    if (isCommission() || isAdmin()) items.push(["review", isCommission() ? "Contrôle / Valider" : "Contrôle"]);
-    items.push(["stats", "Statistiques"]);
-    if (isAdmin()) items.push(["accounts", "Comptes"]);
+    var items;
+    if (isObserver()) {
+      items = [["home", "Accueil"], ["reports", "Activités"], ["stats", "Statistiques"], ["account", "Compte"]];
+    } else {
+      items = [["home", "Accueil"], ["reports", "Activités"], ["form", "Nouvelle"]];
+      if (isCommission() || isAdmin()) items.push(["review", isCommission() ? "Contrôle / Valider" : "Contrôle"]);
+      items.push(["stats", "Statistiques"]);
+      if (isAdmin()) items.push(["accounts", "Comptes"]);
+    }
     return h("nav", { class: "bottom", "aria-label": "Navigation" }, items.map(function (it) {
       var active = state.screen === it[0] || (state.screen === "detail" && it[0] === "reports");
       return h("button", { type: "button", class: active ? "active" : "", "aria-current": active ? "page" : null, onclick: function () { go(it[0], {}); } }, navIcon(it[0]), h("span", { text: it[0] === "stats" ? "Stats" : it[1] }));
@@ -266,7 +273,7 @@
       : "À transmettre avant " + info.deadlineLabel + ".";
     var lines = draft
       ? [h("p", { text: "Votre brouillon du " + dayMonth(draft.activity_date) + " n'a pas été transmis." }), h("p", { class: "muted", text: deadline })]
-      : [h("p", { text: "Le rapport du culte n'est pas encore rédigé. " + deadline })];
+      : [h("p", { text: "Le rapport du service divin n'est pas encore rédigé. " + deadline })];
     return h("section", { class: "card service" + (late ? " late" : "") },
       h("h3", { text: what }), lines,
       h("button", { class: "btn primary", type: "button", onclick: action, text: draft ? "Continuer le brouillon" : "Rédiger le rapport" }));
@@ -343,6 +350,7 @@
     var st = S.compute(D.reports, { from: pr.from, to: pr.to, statuses: ["validated"] });
     var blocks = [];
     var monthName = TT.MONTHS[m - 1];
+    if (isObserver()) { shell(observerBlocks(y, m, st, monthName, rs)); return; }
     blocks.push(h("section", { class: "hero" },
       h("h2", { text: greeting() }),
       h("p", { class: "muted", text: TT.ROLES[role()] + (D.profile.community_id ? " · " + D.communityName(D.profile.community_id) : "") }),
@@ -427,7 +435,7 @@
       more
     ];
   }
-  function reportsScreen() { shell(listScreen({ title: "Activités" })); }
+  function reportsScreen() { shell(listScreen({ title: "Activités", noNew: isObserver() })); }
 
   function reviewScreen() {
     var tabs = [["todo", "À contrôler", ["submitted", "in_control"]], ["validate", "À valider", ["checked"]], ["fix", "À corriger", ["needs_correction"]]];
@@ -484,6 +492,7 @@
     var hist = h("div", { id: "history" });
     var blocks = [
       h("button", { class: "linklike back", type: "button", onclick: function () { history.length > 1 ? history.back() : go("reports"); }, text: "Retour" }),
+      isObserver() ? h("p", { class: "hint box", role: "note", text: "Consultation en lecture seule." }) : null,
       h("section", { class: "card" },
         h("div", { class: "title-row" }, h("div", {}, h("h2", { text: t ? t.label : "Activité" }), h("p", { class: "muted", text: "Activité du " + TT.fmtDate(r.activity_date) })), h("div", { class: "chips" }, statusChip(r.status), syncChip(r))),
         r._err ? h("p", { class: "msg bad", text: (r._errKind === "temporary" ? "Erreur temporaire (nouvel essai possible) : " : "Action requise : ") + r._err }) : null,
@@ -922,20 +931,22 @@
   /* ---------- Comptes (administrateur) ---------- */
   var accountsCache = { rows: null, created: null };
   async function accountsScreen() {
-    var box = h("div"); shell([h("div", { class: "title-row" }, h("h2", { text: "Comptes" })), box]);
+    var box = h("div");
+    var toggle = h("button", { class: "btn primary", type: "button", "aria-expanded": "false", "aria-controls": "ac-form", text: "+ Créer un compte" });
+    shell([h("div", { class: "title-row" }, h("div", {}, h("h2", { text: "Comptes" }), h("p", { class: "hint", style: "font-style:italic", text: "Gérez les accès au registre du district." })), toggle), box]);
     if (!D.online) { box.appendChild(emptyState("⚠", "Connexion nécessaire", "La gestion des comptes nécessite une connexion Internet.")); return; }
     try { accountsCache.rows = await A.select("profiles", "select=*&order=created_at.asc"); } catch (e) { box.appendChild(h("p", { class: "msg bad", text: TT.friendly(e) })); return; }
     var me = A.user().id;
     var iMail = h("input", { id: "ac-mail", type: "email", required: true, inputmode: "email" });
     var iName = h("input", { id: "ac-name", type: "text", required: true });
-    var iRole = h("select", { id: "ac-role", required: true }, ["community_clerk", "community_leader", "commission", "commission_deputy"].map(function (r) { return opt(r, TT.ROLES[r]); }));
+    var iRole = h("select", { id: "ac-role", required: true }, ["community_clerk", "community_leader", "commission", "commission_deputy", "district_leader", "district_deputy"].map(function (r) { return opt(r, TT.ROLES[r]); }));
     var iComm = h("select", { id: "ac-comm" }, opt("", "—"), D.communities.map(function (c) { return opt(c.id, c.name); }));
     var commField = field("Communauté", iComm);
     function syncRole() { commField.hidden = !(iRole.value === "community_clerk" || iRole.value === "community_leader"); }
     iRole.addEventListener("change", syncRole);
     var msg = h("p", { class: "msg", hidden: true, role: "status" });
     var out = h("div");
-    var form = h("form", { class: "card", onsubmit: async function (ev) {
+    var form = h("form", { class: "card", id: "ac-form", hidden: true, onsubmit: async function (ev) {
       ev.preventDefault(); msg.hidden = true; TT.replaceAll(out);
       var comm = !commField.hidden ? iComm.value : null;
       if (!commField.hidden && !comm) { msg.textContent = "Choisissez la communauté."; msg.className = "msg bad"; msg.hidden = false; return; }
@@ -964,16 +975,35 @@
       } catch (e) { TT.toast(TT.friendly(e), "bad"); }
       finally { btn.disabled = false; }
     }
-    var list = h("div", { class: "card" }, h("h3", { text: "Utilisateurs (" + accountsCache.rows.length + ")" }), out2, accountsCache.rows.map(function (p) {
-      return h("div", { class: "row-item static" },
-        h("div", { class: "ri-main" }, h("strong", { text: p.display_name }), h("span", { class: "muted", text: TT.ROLES[p.role] + (p.community_id ? " — " + D.communityName(p.community_id) : "") })),
-        h("div", { class: "ri-side" }, chip(p.active ? "Actif" : "Désactivé", p.active ? "good" : "bad"), p.id === me ? chip("Vous", "") : [
+    toggle.addEventListener("click", function () {
+      form.hidden = !form.hidden;
+      toggle.setAttribute("aria-expanded", String(!form.hidden));
+      if (!form.hidden) iMail.focus();
+    });
+    var q = h("input", { id: "ac-search", type: "search", placeholder: "Rechercher par nom ou rôle", "aria-label": "Rechercher un utilisateur", oninput: function () { paint(); } });
+    var listBox = h("div", { class: "card registre" });
+    function rowFor(p) {
+      var comm = p.community_id ? " — " + D.communityName(p.community_id) : "";
+      return h("div", { class: "reg-row" },
+        h("span", { class: "avatar", "aria-hidden": "true", text: initials(p.display_name) }),
+        h("div", { class: "ri-main" }, h("h3", { class: "reg-name", text: p.display_name }), h("span", { class: "reg-role", text: (TT.ROLES[p.role] || p.role) + comm })),
+        h("div", { class: "reg-side" }, chip(p.active ? "Actif" : "Désactivé", p.active ? "good" : "bad"), p.id === me ? chip("Vous", "") : h("div", { class: "reg-actions" },
           h("button", { class: "btn small ghost", type: "button", text: "Nouveau mot de passe", onclick: function (ev) { resetPassword(p, ev.currentTarget); } }),
-          h("button", { class: "btn small ghost", type: "button", text: p.active ? "Désactiver" : "Réactiver", onclick: async function () {
+          h("button", { class: "btn small ghost rubric", type: "button", text: p.active ? "Désactiver" : "Réactiver", onclick: async function () {
             if (!await TT.confirmBox((p.active ? "Désactiver" : "Réactiver") + " le compte de " + p.display_name + " ?", "Confirmer", p.active)) return;
             try { await A.update("profiles", "id=eq." + p.id, { active: !p.active }); TT.toast("Fait.", "good"); accountsScreen(); } catch (e) { TT.toast(TT.friendly(e), "bad"); }
-          } })]));
-    }));
+          } }))));
+    }
+    function paint() {
+      var needle = q.value.trim().toLowerCase();
+      var rows = accountsCache.rows.filter(function (p) {
+        return !needle || (p.display_name + " " + (TT.ROLES[p.role] || p.role) + " " + (p.community_id ? D.communityName(p.community_id) : "")).toLowerCase().indexOf(needle) >= 0;
+      });
+      TT.replaceAll(listBox, h("h3", { text: "Utilisateurs (" + rows.length + (needle ? " sur " + accountsCache.rows.length : "") + ")" }), out2,
+        rows.length ? rows.map(rowFor) : h("p", { class: "muted", text: "Aucun utilisateur ne correspond à cette recherche." }));
+    }
+    paint();
+    var list = h("div", {}, h("div", { class: "field" }, q), listBox);
     var backupCard = h("section", { class: "card" }, h("h3", { text: "Sauvegarde des données" }),
       h("p", { class: "hint", text: "Fichier complet : communautés, types d'activités, comptes (sans mots de passe), fiches, intervenants, actes, contrôles et validations. Conservez-le hors de cet appareil." }),
       h("button", { class: "btn ghost", type: "button", text: "Télécharger une sauvegarde (JSON)", onclick: function (ev) { backup(ev.currentTarget); } }));
@@ -996,6 +1026,40 @@
     finally { btn.disabled = false; btn.textContent = old; }
   }
 
+  /* ---------- Observateurs (Responsable et Suppléant du district) : constats, sans action ---------- */
+  function initials(name) {
+    return String(name || "").trim().split(/\s+/).filter(Boolean).slice(0, 2).map(function (w) { return w.charAt(0).toUpperCase(); }).join("") || "•";
+  }
+  function observerBlocks(y, m, st, monthName, rs) {
+    var n = function (s) { return rs.filter(function (r) { return r.status === s; }).length; };
+    var inProgress = n("submitted") + n("in_control") + n("checked") + n("needs_correction");
+    var mois = monthName.charAt(0).toUpperCase() + monthName.slice(1) + " " + y;
+    var constats = [
+      st.total.n + " activité" + (st.total.n > 1 ? "s" : "") + " validée" + (st.total.n > 1 ? "s" : "") + " ce mois-ci.",
+      inProgress ? inProgress + " fiche" + (inProgress > 1 ? "s" : "") + " en cours de traitement dans le district." : "Aucune fiche en cours de traitement dans le district.",
+    ];
+    return [
+      h("section", { class: "hero" },
+        h("h2", { text: "District de Tala-Tala — " + mois }),
+        h("p", { class: "muted", text: TT.ROLES[role()] })),
+      moneyBlock(st, y, m),
+      h("section", { class: "card" }, h("h3", { text: "Situation du district" }),
+        constats.map(function (t) { return h("p", { text: t }); }),
+        h("p", { class: "hint", text: "Consultation en lecture seule. Les fiches sont saisies et contrôlées par les communautés et la Commission." })),
+      h("div", { class: "actions" }, h("button", { class: "btn primary", type: "button", text: "Voir les statistiques", onclick: function () { go("stats", {}); } })),
+    ];
+  }
+  function accountScreen() {
+    shell([
+      h("div", { class: "title-row" }, h("h2", { text: "Compte" })),
+      h("section", { class: "card" },
+        h("h3", { text: D.profile.display_name || "" }),
+        h("p", { class: "muted", text: TT.ROLES[role()] || role() }),
+        h("p", { class: "hint", text: "Pour un nouveau mot de passe, adressez-vous à l'administrateur du district." }),
+        h("div", { class: "actions" }, h("button", { class: "btn ghost", type: "button", text: "Se déconnecter", onclick: function () { logout(); } }))),
+    ]);
+  }
+
   /* ---------- Rendu ---------- */
   function render() {
     if (!D.profile) return;
@@ -1007,6 +1071,7 @@
       case "form": return formScreen();
       case "stats": return statsScreen();
       case "accounts": if (isAdmin()) return accountsScreen(); break;
+      case "account": if (isObserver()) return accountScreen(); break;
     }
     homeScreen();
   }

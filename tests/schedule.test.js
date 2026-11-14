@@ -6,7 +6,7 @@ var a = S.lastSlot(T("2026-11-14T02:34:00Z"));
 eq(a.date, "2026-11-11", "samedi -> mercredi"); eq(a.deadlineLabel, "mercredi à 10 h", "label mercredi");
 eq(S.isLate(a, T("2026-11-14T02:34:00Z")), true, "en retard");
 // dimanche 15/11 à 10 h Kinshasa (09:00Z) : service en cours => encore mercredi
-eq(S.lastSlot(T("2026-11-15T09:00:00Z")).date, "2026-11-11", "pendant le culte");
+eq(S.lastSlot(T("2026-11-15T09:00:00Z")).date, "2026-11-11", "pendant le service divin");
 // dimanche 11 h 30 Kinshasa (10:30Z) : dimanche, échéance 12 h pas dépassée
 var d = S.lastSlot(T("2026-11-15T10:30:00Z"));
 eq(d.date, "2026-11-15", "dimanche fini"); eq(d.deadlineLabel, "dimanche à 12 h", "label dimanche"); eq(S.isLate(d, T("2026-11-15T10:30:00Z")), false, "pas en retard");

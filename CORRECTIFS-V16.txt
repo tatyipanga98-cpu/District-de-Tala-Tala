@@ -5,7 +5,7 @@ VERSION 16 — CE QUI CHANGE
      mercredi 6 h 00 - 6 h 30 (rapport avant mercredi à 10 h), dimanche 9 h 30 - 11 h 00 (rapport avant dimanche à 12 h).
    - Il ne concerne que les types « Service divin ... ». Réunions, mariages, conférences, etc. : aucun message.
    - Heure de Kinshasa (UTC+1). Une fois le rapport transmis, le rappel devient un simple remerciement.
-   - « Rédiger le rapport » ouvre le formulaire avec la date du culte et le type « Service divin ordinaire » déjà choisis.
+   - « Rédiger le rapport » ouvre le formulaire avec la date du service divin et le type « Service divin ordinaire » déjà choisis.
 
 2. Salutation : « Bonjour, Sr. Armine. » pour Armine Lubamba (communauté Source de vie). Autres rapporteurs : prénom.
    Pour ajouter un titre : config.js, ligne HONORIFICS (nom du compte en minuscules).
@@ -96,3 +96,18 @@ PASSE 4 — « Le Bestiaire des Signes » (graphiques signature)
 - js/chart.js n'est plus appelé ; le fichier reste présent (à supprimer ou non, au choix).
 - Tests : tests/signature.test.js (géométrie, 8 contrôles) ; tests/navigateur.test.js vérifie le rendu et le toucher des quatre graphiques.
 - sw.js : tt-v16-8.
+
+PASSE 5 — Addendum « Gouvernance & Terminologie »
+- Terminologie : « culte » remplacé par « service divin » dans le code, les messages et les tests (aucune occurrence restante hors migrations historiques).
+- Base (migration 006 « roles_observateurs_district », appliquée) : rôles district_leader et district_deputy ajoutés à profiles_role_check ;
+  lecture élargie (reports, religious_acts, report_officiants, report_controls, report_validations) ; aucune politique d'écriture ;
+  save_report refuse ces rôles avec « Accès en lecture seule… » (garde explicite, vérifiée en base).
+- Fonction Edge swift-api version 5 (verify_jwt actif) : les deux nouveaux rôles sont créables par l'administrateur ; la réinitialisation reste réservée à l'administrateur.
+- Interface observateurs : navigation Accueil / Activités / Statistiques / Compte ; accueil « District de Tala-Tala — mois » avec constats et chiffres du mois, sans bloc d'action ;
+  liste des activités sans bouton « Nouvelle » ; fiche en consultation avec bandeau « Consultation en lecture seule. » (boutons d'action déjà masqués par canEditReport) ;
+  écran Compte avec déconnexion.
+- Écran Comptes : sous-titre, bouton « + Créer un compte » qui déploie le formulaire (et non un drawer), recherche par nom ou rôle, registre à filets avec initiales,
+  actions « Nouveau mot de passe » et « Désactiver » (couleur bordeaux). La recherche par e-mail n'est pas proposée : les e-mails ne sont pas dans la table profiles.
+- Non fait : création des deux comptes observateurs (adresses e-mail à fournir par l'administrateur) ; mot de passe à changer à la première connexion comme pour les autres.
+- Tests : tests/v16.test.js contient un parcours observateur complet ; navigateur et Node passent.
+- sw.js : tt-v16-9.

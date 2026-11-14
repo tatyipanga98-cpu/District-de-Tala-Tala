@@ -13,6 +13,8 @@ const allowedRoles = [
 "community_leader",
 "commission",
 "commission_deputy",
+"district_leader",
+"district_deputy",
 ];
 
 function response(data: unknown, status = 200) {

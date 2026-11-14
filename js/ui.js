@@ -58,7 +58,7 @@
   TT.ROLES = {
     community_clerk: "Rapporteur de communauté", community_leader: "Responsable de communauté",
     commission: "Commission de rédaction", commission_deputy: "Commission de rédaction (adjoint)",
-    district_admin: "Administrateur du district"
+    district_admin: "Administrateur du district", district_leader: "Responsable de district", district_deputy: "Suppléant du responsable de district"
   };
   TT.uuid = function () {
     if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
