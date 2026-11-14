@@ -96,6 +96,20 @@
     return "var(--sig-gold)";
   }
 
+  /* Courbe lissée (Bézier cubique, Catmull-Rom) ; les poignées sont bornées au cadre du graphique. */
+  function smoothPath(pts, top, bottom) {
+    if (!pts.length) return "";
+    var d = "M" + pts[0].x.toFixed(1) + "," + pts[0].y.toFixed(1);
+    var clampY = function (y) { return Math.min(bottom, Math.max(top, y)); };
+    for (var i = 0; i < pts.length - 1; i++) {
+      var p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2;
+      var c1x = p1.x + (p2.x - p0.x) / 6, c1y = clampY(p1.y + (p2.y - p0.y) / 6);
+      var c2x = p2.x - (p3.x - p1.x) / 6, c2y = clampY(p2.y - (p3.y - p1.y) / 6);
+      d += " C" + c1x.toFixed(1) + "," + c1y.toFixed(1) + " " + c2x.toFixed(1) + "," + c2y.toFixed(1) + " " + p2.x.toFixed(1) + "," + p2.y.toFixed(1);
+    }
+    return d;
+  }
+
   /* ---------- 1. Parchemin : courbe des 12 mois ---------- */
   function parchemin(target, o) {
     var L = 32, R = 344, T = 24, B = 160;
@@ -108,7 +122,7 @@
     var low = nonzero.length > 1 ? nonzero.reduce(function (a, b) { return b.v < a.v ? b : a; }) : null;
     var last = nonzero.length ? nonzero[nonzero.length - 1] : null;
 
-    var line = pts.map(function (p, i) { return (i ? "L" : "M") + p.x.toFixed(1) + "," + p.y.toFixed(1); }).join(" ");
+    var line = smoothPath(pts, T, B);
     var area = line + " L" + R + "," + B + " L" + L + "," + B + " Z";
 
     var kids = [];

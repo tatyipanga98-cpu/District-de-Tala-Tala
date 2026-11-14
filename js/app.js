@@ -34,7 +34,7 @@
 
   /* ---------- Éléments communs ---------- */
   function chip(text, kind) { return h("span", { class: "chip " + (kind || ""), text: text }); }
-  var STATUS_ICON = { draft: "↻", submitted: "➜", needs_correction: "!", in_control: "⏱", checked: "◎", validated: "✓" };
+  var STATUS_ICON = { draft: "✎", submitted: "✉", needs_correction: "!", in_control: "⏱", checked: "◎", validated: "✔" };
   function statusChip(s) {
     var kind = { draft: "", submitted: "info", needs_correction: "warn", in_control: "info", checked: "info", validated: "good" }[s] || "";
     return h("span", { class: "chip ico " + kind }, h("span", { "aria-hidden": "true", text: STATUS_ICON[s] || "" }), " " + (TT.STATUS[s] || s));
@@ -385,7 +385,8 @@
   function reportRow(r) {
     var t = D.type(r.activity_type_id);
     var tot = TT.fmtFC(S.cents(r.offering_fc)) + " et " + TT.fmtUSD(S.cents(r.offering_usd));
-    return h("button", { class: "row-item", type: "button", onclick: function () { go("detail", r._local ? { qid: r._qid } : { id: r.id }); } },
+    return h("button", { class: "row-item has-num", type: "button", onclick: function () { go("detail", r._local ? { qid: r._qid } : { id: r.id }); } },
+      h("span", { class: "ri-num", "aria-hidden": "true", text: r.report_code ? r.report_code.slice(-3) : "" }),
       h("div", { class: "ri-main" },
         h("strong", { text: t ? t.label : "Activité" }),
         h("span", { class: "muted", text: TT.fmtDate(r.activity_date) }),
@@ -727,11 +728,11 @@
     var submitLabel = isCommunity() ? "Enregistrer et transmettre" : "Enregistrer et soumettre au contrôle";
     var title = existing ? "Modifier l'activité" : copy ? "Correction d'une fiche validée" : "Nouvelle activité";
     var actions = h("div", { class: "actions form-actions" },
-        h("button", { class: "btn ghost", type: "button", onclick: function () { formDirty = false; history.length > 1 ? history.back() : go("reports"); }, text: "Annuler" }),
+        h("button", { class: "linklike", type: "button", onclick: function () { formDirty = false; history.length > 1 ? history.back() : go("reports"); }, text: "Annuler" }),
         (editingSynced && !isCommunity())
           ? h("button", { class: "btn primary", type: "submit", text: "Enregistrer les modifications" })
-          : [h("button", { class: "btn", type: "submit", text: "Enregistrer le brouillon" }),
-             h("button", { class: "btn primary", type: "button", onclick: function () { save(true); }, text: submitLabel })]);
+          : [h("button", { class: "linklike form-draft", type: "submit", text: "Enregistrer le brouillon" }),
+             h("button", { class: "btn primary", type: "button", onclick: function () { save(true); }, text: isCommunity() ? "Transmettre" : "Soumettre au contrôle" })]);
     /* Brouillon automatique : la saisie en cours (sans validation) est gardée sur cet appareil jusqu'à l'enregistrement
        de la fiche. Ce n'est pas la file d'envoi : rien n'est transmis tant que l'utilisateur n'enregistre pas. */
     function pad2(n) { return (n < 10 ? "0" : "") + n; }
@@ -954,14 +955,14 @@
       try {
         var r = await A.fn("swift-api", { users: [{ email: iMail.value.trim(), display_name: iName.value.trim(), role: iRole.value, community_id: comm }] });
         var u = r.created[0];
-        TT.replaceAll(out, h("div", { class: "box good" }, h("p", {}, h("strong", { text: "Compte créé pour " + u.email + "." })), h("p", { text: "Mot de passe provisoire (affiché une seule fois) :" }),
+        TT.replaceAll(out, h("div", { class: "box reg-gold" }, h("p", {}, h("strong", { text: "Compte créé pour " + u.email + "." })), h("p", { text: "Mot de passe provisoire (affiché une seule fois) :" }),
           h("p", {}, h("code", { id: "tmp-pw", text: u.temporary_password })),
           h("p", { class: "hint", text: "Transmettez-le de façon confidentielle. La personne devra le remplacer à sa première connexion." }),
           h("button", { class: "btn small", type: "button", text: "Copier", onclick: function () { try { navigator.clipboard.writeText(u.temporary_password).then(function () { TT.toast("Copié.", "good"); }); } catch (e) { TT.toast("Sélectionnez le mot de passe pour le copier.", "bad"); } } })));
         form.reset(); syncRole();
         try { accountsCache.rows = await A.select("profiles", "select=*&order=created_at.asc"); } catch (e) {}
       } catch (e) { msg.textContent = TT.friendly(e); msg.className = "msg bad"; msg.hidden = false; }
-    } }, h("h3", { text: "Créer un compte" }), field("Adresse e-mail", iMail), field("Nom affiché", iName), field("Rôle", iRole), commField, msg, h("button", { class: "btn primary", type: "submit", text: "Créer le compte" }), out);
+    } }, h("div", { class: "drawer-head" }, h("h3", { text: "Créer un compte" }), h("button", { class: "linklike", type: "button", text: "Fermer", onclick: function () { form.hidden = true; toggle.setAttribute("aria-expanded", "false"); toggle.focus(); } })), field("Adresse e-mail", iMail), field("Nom affiché", iName), field("Rôle", iRole), commField, msg, h("button", { class: "btn primary", type: "submit", text: "Créer le compte" }), out);
     syncRole();
     var out2 = h("div", { class: "box good", hidden: true });
     async function resetPassword(p, btn) {

@@ -42,7 +42,7 @@ const rep = (id, d, t, rc, st = 'submitted') => ({ id, report_code: 'TT-2026-000
   txt = await p.locator('body').innerText();
   check('brouillon : « Votre brouillon du 11 novembre n\'a pas été transmis. »', txt.includes("Votre brouillon du 11 novembre n'a pas été transmis."), txt.slice(0, 0));
   check('brouillon : bouton « Continuer le brouillon »', (await p.locator('button', { hasText: 'Continuer le brouillon' }).count()) === 1);
-  await navTo(p, 'Activités'); check('statuts : icône de brouillon ↻ dans la liste', (await p.locator('.chip.ico', { hasText: '↻' }).count()) >= 1);
+  await navTo(p, 'Activités'); check('statuts : icône de brouillon ✎ dans la liste', (await p.locator('.chip.ico', { hasText: '✎' }).count()) >= 1);
   await ctx.close();
   // Autosave : indicateur « Enregistré à HH:MM » et restauration proposée
   { const ctx3 = await run(b, 'Armine Lubamba', 'community_clerk', [], '2026-11-14T02:34:00Z');

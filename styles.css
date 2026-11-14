@@ -837,3 +837,72 @@ header.top .sync-count {
 .alert-action:focus-visible { box-shadow: var(--focus); border-radius: 4px; }
 
 .tile .num { font: 500 1.15rem/1 var(--serif); color: var(--reg-ink); }
+
+/* ===== Registre enluminé — étape 3 : formulaire, liste, comptes, graphiques, impression ===== */
+
+/* Formulaire : une barre d'action collante, 64 px au plus, au-dessus de la navigation. */
+.form-actions {
+  position: sticky; bottom: calc(3.6rem + env(safe-area-inset-bottom, 0px)); z-index: 5;
+  height: auto; max-height: 64px; box-sizing: border-box; margin: 1rem 0 0; padding: .5rem 0;
+  display: flex; align-items: center; justify-content: space-between; gap: .6rem;
+  background: var(--paper); border-top: 1px solid var(--rule-strong);
+}
+.form-actions .btn { flex: 0 0 auto; }
+.form-actions .form-draft, .form-actions > .linklike { font: 500 .95rem/1.2 var(--sans); }
+
+/* Liste des activités : numéro de fiche sur 24 px, en gris clair. */
+.ri-num {
+  flex: 0 0 24px; width: 24px; font: 400 .8rem/1 var(--sans); color: var(--muted); opacity: .75;
+  font-variant-numeric: tabular-nums; text-align: left;
+}
+
+/* Comptes : tiroir latéral, encadré doré pour le mot de passe provisoire. */
+form#ac-form:not([hidden]) {
+  position: fixed; top: 0; right: 0; bottom: 0; z-index: 40; width: min(92vw, 400px); max-width: 100%;
+  margin: 0; border-radius: 0; overflow-y: auto; padding: 1.1rem 1.1rem 5rem; box-sizing: border-box;
+  box-shadow: -12px 0 32px -12px rgba(2, 28, 157, .35);
+}
+.drawer-head { display: flex; justify-content: space-between; align-items: center; gap: .5rem; }
+.reg-gold {
+  background: var(--card); color: var(--reg-ink);
+  border: 1px solid var(--reg-gold); border-left: 3px solid var(--reg-gold);
+}
+
+/* Graphiques : almanach (record en or plein), tableau d'honneur (rang en italique, nom en serif). */
+td.sig-cal-best { background: var(--sig-gold); box-shadow: none; }
+td.sig-cal-best .sig-cal-d { color: #fff; }
+.sig-rank-num { font-style: italic; }
+.sig-name { font-family: var(--serif); font-size: 1rem; }
+
+/* Impression : noir et blanc, en-tête sobre, pagination quand le navigateur la supporte. */
+@media print {
+  *, *::before, *::after {
+    color: #000 !important; background: transparent !important; box-shadow: none !important; text-shadow: none !important;
+  }
+  body::before, nav.bottom, .top-right, .icon-btn, .actions, .form-actions, .toast, .overlay, .dialog, .autosave-banner, button {
+    display: none !important;
+  }
+  header.top { height: auto; min-height: 0; padding: 0 0 .4rem; border-bottom: 1px solid #000; }
+  header.top .brand img { width: 40px; height: 40px; border: 1px solid #000; }
+  .card, .chart-card { border: 1px solid #000 !important; break-inside: avoid; }
+  table { border-collapse: collapse; }
+  th, td { border-bottom: 1px solid #000; }
+  main { padding-bottom: 0; }
+  @page {
+    margin: 16mm 14mm 18mm;
+    @bottom-right { content: "Page " counter(page); font-size: 9pt; }
+  }
+}
+
+/* Correctifs de rendu (étape 3) */
+.row-item.has-num { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; column-gap: .4rem; align-items: start; }
+.row-item.has-num > .ri-num { grid-column: 1; }
+.row-item.has-num > .ri-main { grid-column: 2; }
+.row-item.has-num > .ri-side { grid-column: 3; }
+main[tabindex="-1"]:focus { outline: none; }
+.form-actions { flex-wrap: nowrap; height: 60px; max-height: 64px; }
+.form-actions .linklike { white-space: nowrap; font-size: .9rem; }
+.form-actions .btn.primary { padding: .6rem .9rem; white-space: nowrap; }
+.form-actions .btn.primary { padding: .6rem .75rem; }
+.form-actions .linklike { font-size: .85rem; }
+.form-actions { padding-right: 0; }
