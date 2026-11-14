@@ -87,13 +87,14 @@
     return Math.ceil(((t - y0) / 86400000 + 1) / 7);
   }
   function level(count) { return count <= 0 ? 0 : count === 1 ? 1 : count === 2 ? 2 : 3; }
-  function segmentColor(label) {
+  var VIZ = ["var(--viz-1)", "var(--viz-2)", "var(--viz-3)", "var(--viz-4)", "var(--viz-5)", "var(--viz-6)"];
+  function segmentColor(label, i) {
     var l = (label || "").toLowerCase();
-    if (/ordinaire/.test(l)) return "var(--sig-navy)";
-    if (/spécial|special/.test(l)) return "var(--sig-navy-soft)";
-    if (/jeunesse/.test(l)) return "var(--sig-good)";
-    if (/funèbre|funebre/.test(l)) return "var(--sig-muted)";
-    return "var(--sig-gold)";
+    if (/ordinaire/.test(l)) return "var(--viz-1)";
+    if (/spécial|special/.test(l)) return "var(--viz-2)";
+    if (/jeunesse/.test(l)) return "var(--viz-4)";
+    if (/funèbre|funebre/.test(l)) return "var(--viz-5)";
+    return VIZ[(i || 0) % VIZ.length];
   }
 
   /* Courbe lissée (Bézier cubique, Catmull-Rom) ; les poignées sont bornées au cadre du graphique. */
@@ -127,6 +128,15 @@
 
     var kids = [];
     kids.push(svg("defs", {}, [
+      svg("linearGradient", { id: id + "-area", x1: 0, y1: 0, x2: 0, y2: 1 }, [
+        svg("stop", { offset: "0%", "stop-color": "var(--viz-2)", "stop-opacity": 0.55 }, []),
+        svg("stop", { offset: "100%", "stop-color": "var(--viz-2)", "stop-opacity": 0.02 }, [])
+      ]),
+      svg("linearGradient", { id: id + "-stroke", x1: 0, y1: 0, x2: 1, y2: 0 }, [
+        svg("stop", { offset: "0%", "stop-color": "var(--viz-1)" }, []),
+        svg("stop", { offset: "60%", "stop-color": "var(--viz-2)" }, []),
+        svg("stop", { offset: "100%", "stop-color": "var(--viz-4)" }, [])
+      ]),
       svg("pattern", { id: id + "-paper", width: 4, height: 4, patternUnits: "userSpaceOnUse" }, [
         svg("circle", { cx: 1, cy: 1, r: 0.4, fill: "var(--sig-rule)", opacity: 0.5 }, [])
       ])
@@ -134,8 +144,8 @@
     [40, 80, 120, 160].forEach(function (y) {
       kids.push(svg("line", { x1: L, y1: y, x2: R, y2: y, stroke: "var(--sig-grid)", "stroke-width": 1 }, []));
     });
-    var areaEl = svg("path", { d: area, fill: "var(--sig-navy)", "fill-opacity": 0.14, class: "sig-area" }, []);
-    var lineEl = svg("path", { d: line, fill: "none", stroke: "var(--sig-navy)", "stroke-width": 2.5, "stroke-linecap": "round", "stroke-linejoin": "round", class: "sig-line" }, []);
+    var areaEl = svg("path", { d: area, fill: "url(#" + id + "-area)", class: "sig-area" }, []);
+    var lineEl = svg("path", { d: line, fill: "none", stroke: "url(#" + id + "-stroke)", "stroke-width": 3.5, "stroke-linecap": "round", "stroke-linejoin": "round", class: "sig-line" }, []);
     kids.push(areaEl, lineEl);
 
     var seals = svg("g", { class: "sig-seals" }, []);
@@ -143,7 +153,7 @@
       var isPeak = peak && i === peak.i, isLow = low && i === low.i;
       var c = svg("circle", {
         cx: p.x.toFixed(1), cy: p.y.toFixed(1), r: isPeak ? 6 : 4,
-        fill: isPeak ? "var(--sig-gold)" : isLow ? "var(--sig-bad)" : "var(--sig-navy)"
+        fill: isPeak ? "var(--viz-3)" : isLow ? "var(--viz-6)" : "var(--viz-1)"
       }, []);
       c.setAttribute("data-i", i);
       seals.appendChild(c);
@@ -248,6 +258,7 @@
       var fill = el("div", { class: "sig-bar-fill" }, []);
       fill.style.transform = REDUCED ? "scaleX(" + (r.value / max) + ")" : "scaleX(0)";
       fill.setAttribute("data-v", (r.value / max).toFixed(3));
+      fill.style.background = i === 0 ? "linear-gradient(90deg,var(--viz-3),#ffd35c)" : "linear-gradient(90deg," + VIZ[i % 6] + ",var(--viz-2))";
       fills.push(fill);
       var val = el("span", { class: "sig-val", text: fmt(r.value) }, []);
       var tr = el("tr", { class: "sig-rank-row" + (r.isMine ? " is-mine" : "") }, [
@@ -313,7 +324,7 @@
     segs.forEach(function (s, i) {
       var frac = s.value / total, a2 = a + frac * Math.PI * 2, am = (a + a2) / 2;
       var p = svg("path", {
-        d: arcPath(0, 0, R, a, a2), fill: segmentColor(s.label), stroke: "var(--sig-gold)", "stroke-width": 1, class: "sig-seg"
+        d: arcPath(0, 0, R, a, a2), fill: segmentColor(s.label, i), stroke: "var(--sig-paper)", "stroke-width": 2, class: "sig-seg"
       }, []);
       p.setAttribute("data-i", i);
       p.setAttribute("data-mid", am.toFixed(4));
@@ -329,7 +340,7 @@
       a = a2;
     });
     var seal = svg("g", { class: "sig-seal" }, [
-      svg("circle", { cx: 0, cy: 0, r: 32, fill: "var(--sig-navy)" }, []),
+      svg("circle", { cx: 0, cy: 0, r: 32, fill: "var(--viz-7)" }, []),
       svgText(0, -2, fmt(total), { "text-anchor": "middle", "font-size": 22, "font-weight": 600, fill: "var(--sig-paper)" }),
       svgText(0, 14, "ACTIVITÉS", { "text-anchor": "middle", "font-size": 8, fill: "var(--sig-paper)", opacity: 0.8 })
     ]);
