@@ -1,0 +1,39 @@
+# Publication GitHub Pages : seuls les fichiers de l'application sont publiés.
+# Les dossiers techniques (tests, migrations, supabase) et la documentation restent dans le dépôt, hors du site.
+name: Pages
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Assembler le site
+        run: |
+          mkdir -p _site
+          cp -r index.html 404.html config.js styles.css sw.js manifest.webmanifest js icons vendor _site/
+          # Garde-fou : aucun dossier technique ni document interne ne doit être publié.
+          for f in tests migrations supabase netlify.toml CORRECTIFS-V15.txt CORRECTIFS-V16.txt LISEZMOI.txt; do
+            if [ -e "_site/$f" ]; then echo "Fichier interdit dans le site : $f"; exit 1; fi
+          done
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
