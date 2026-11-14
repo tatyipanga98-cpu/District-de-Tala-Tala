@@ -187,7 +187,7 @@
     var msg = h("p", { class: "msg", hidden: true, role: "status" });
     var btn = h("button", { class: "btn primary block", type: "submit", text: "Enregistrer le mot de passe" });
     function say(t, k) { msg.textContent = t; msg.className = "msg " + (k || ""); msg.hidden = !t; }
-    TT.replaceAll(root, h("main", { class: "center" }, h("form", { class: "card login", onsubmit: async function (ev) {
+    TT.replaceAll(root, h("main", { class: "center login-screen" }, h("form", { class: "card login", onsubmit: async function (ev) {
       ev.preventDefault();
       if (p1.value.length < 8) { say("Au moins 8 caractères.", "bad"); return; }
       if (p1.value !== p2.value) { say("Les deux mots de passe ne sont pas identiques.", "bad"); return; }
@@ -895,6 +895,24 @@
         labels: pdfLabels(), communities: D.communities, types: D.types, periodSlug: slug(periodLabel), communitySlug: slug(scopeName) }), btn, "Utilisez « Exporter la synthèse (CSV) » sur cet écran.");
     }
     
+    // Taux de validation par communauté : fiches validées / fiches transmises (hors brouillons), sur la période.
+    var rateCard = (function () {
+      var rows = D.communities.map(function (c) {
+        var all = S.compute(D.reports, { from: range.from, to: range.to, statuses: statusSets.noDraft, communityId: c.id }).total.n;
+        var ok = S.compute(D.reports, { from: range.from, to: range.to, statuses: statusSets.validated, communityId: c.id }).total.n;
+        return { name: c.name, all: all, ok: ok };
+      }).filter(function (r) { return r.all > 0; });
+      if (!rows.length) return h("span", { hidden: true });
+      return h("section", { class: "card" }, h("h3", { text: "Fiches validées par communauté" }),
+        h("p", { class: "hint", text: "Part des fiches transmises (hors brouillons) que la Commission a validées sur la période." }),
+        rows.map(function (r) {
+          var p = Math.round(r.ok / r.all * 100);
+          return h("div", { class: "rate-row" },
+            h("div", { class: "rate-head" }, h("span", { text: r.name }), h("span", { class: "rate-val", text: r.ok + " / " + r.all + " · " + p + " %" })),
+            h("div", { class: "reg-progress", role: "progressbar", "aria-label": r.name + " : fiches validées", "aria-valuemin": "0", "aria-valuemax": "100", "aria-valuenow": String(p) },
+              h("span", { style: "width:" + p + "%" })));
+        }));
+    })();
     shell([
       h("div", { class: "title-row" }, h("h2", { text: "Statistiques" })),
       h("div", { class: "card filters" }, field("Période", kindSel), field("Année", yearSel), idxSel ? field(s.kind === "month" ? "Mois" : "Trimestre", idxSel) : null, field("Fiches prises en compte", stSel), cSel ? field("Communauté", cSel) : null),
@@ -909,6 +927,7 @@
       ),
       // ----------------------
 
+      rateCard,
       h("section", { class: "card" },
         h("h3", { text: periodLabel }),
         res.total.n ? [table("Communauté", commRows, row("Total", res.total, true)), h("h3", { text: "Par type d'activité" }), table("Type", typeRows),
@@ -1051,9 +1070,20 @@
       h("div", { class: "actions" }, h("button", { class: "btn primary", type: "button", text: "Voir les statistiques", onclick: function () { go("stats", {}); } })),
     ];
   }
+  function themeCard() {
+    var cur = window.TTTheme ? TTTheme.get() : "auto";
+    var opts = [["auto", "Automatique"], ["light", "Clair"], ["dark", "Sombre"]];
+    return h("section", { class: "card" }, h("h3", { text: "Apparence" }),
+      h("p", { class: "hint", text: "Affichage de l'application sur cet appareil. « Automatique » suit le réglage du téléphone." }),
+      h("div", { class: "chips", role: "group", "aria-label": "Apparence" }, opts.map(function (o) {
+        return h("button", { class: "chip" + (cur === o[0] ? " on" : ""), type: "button", "aria-pressed": String(cur === o[0]), text: o[1],
+          onclick: function () { TTTheme.set(o[0]); render(); } });
+      })));
+  }
   function accountScreen() {
     shell([
       h("div", { class: "title-row" }, h("h2", { text: "Compte" })),
+      themeCard(),
       h("section", { class: "card" },
         h("h3", { text: D.profile.display_name || "" }),
         h("p", { class: "muted", text: TT.ROLES[role()] || role() }),
