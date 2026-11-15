@@ -40,10 +40,10 @@ t('légende du tableau d\'honneur : position de la communauté', () => {
   assert.ok(s.includes('8'));
 });
 t('couleurs de la roue : sémantique, pas décorative', () => {
-  assert.strictEqual(G.segmentColor('Service divin ordinaire'), 'var(--sig-navy)');
-  assert.strictEqual(G.segmentColor('Activité de jeunesse'), 'var(--sig-good)');
-  assert.strictEqual(G.segmentColor('Service divin funèbre'), 'var(--sig-muted)');
-  assert.strictEqual(G.segmentColor('Autre'), 'var(--sig-gold)');
+  assert.strictEqual(G.segmentColor('Service divin ordinaire'), 'var(--viz-1)');
+  assert.strictEqual(G.segmentColor('Activité de jeunesse'), 'var(--viz-4)');
+  assert.strictEqual(G.segmentColor('Service divin funèbre'), 'var(--viz-5)');
+  assert.strictEqual(G.segmentColor('Autre', 2), 'var(--viz-3)');
 });
 t('pourcentage arrondi, division par zéro évitée', () => {
   assert.strictEqual(G.pct(1, 4), 25);
