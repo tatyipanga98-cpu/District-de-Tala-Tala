@@ -1140,6 +1140,54 @@ td.sig-cal-best { background: var(--grad-gold); }
 .clock-time::before { content: ""; display: inline-block; width: .5rem; height: .5rem; margin-right: .4rem; border-radius: 50%; background: var(--gold); vertical-align: .05em; }
 @media print { .clockbar { display: none; } }
 
+/* ===== Audit du 15 novembre : lisibilité, arborescence, cohérence ===== */
+/* Reste du style « registre » : la ligne rouge verticale traversait le contenu sur ordinateur. */
+main::before { display: none; }
+
+/* Boutons secondaires : contour visible (ils ressemblaient à du texte). */
+.btn.ghost { border: 1px solid var(--field); background: var(--card); color: var(--head-ink); }
+.btn.ghost:hover { background: var(--card-tint); border-color: var(--navy); }
+.btn.ghost.rubric { color: var(--bad); border-color: var(--bad); }
+.btn.ghost.rubric:hover { background: var(--bad-bg); }
+.card > .btn.ghost, .card > .row > .btn.ghost { margin-top: .4rem; }
+.card > .btn.ghost { width: 100%; }
+
+/* Filtres : recherche en pleine largeur, statut et mois côte à côte ; l'aide reste lue par les lecteurs d'écran. */
+.filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.filters .f-search { grid-column: 1 / -1; order: -1; }
+.filters .f-search .hint { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.filters .field > label { font-size: .8rem; color: var(--muted); font-weight: 600; }
+@media (min-width: 700px) { .filters { grid-template-columns: repeat(3, minmax(0, 1fr)); } .filters .f-search { grid-column: auto; order: 0; } }
+
+/* Lignes de liste : trois lignes, numéro de fiche et état sur la première. */
+.ri-main .muted { display: block; line-height: 1.35; }
+.row-item { align-items: start; }
+
+/* Onglets (Contrôle) : colonnes égales, le compte passe sous le libellé. */
+.tabs { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: .4rem; max-width: 40rem; }
+.tabs button { padding: .45rem .3rem; font-size: .88rem; line-height: 1.2; text-align: center; min-height: 44px; }
+
+/* Choix d'apparence : l'option active est pleine. */
+.chips button.chip { cursor: pointer; min-height: 40px; padding: .4rem .95rem; border: 1px solid var(--field); background: var(--card); color: var(--head-ink); font-weight: 600; }
+.chips button.chip[aria-pressed="true"] { background: var(--navy); border-color: var(--navy); color: #fff; }
+
+/* Détail d'une fiche : le numéro tient sur une ligne. */
+.kv { grid-template-columns: minmax(6.5rem, 8.5rem) 1fr; }
+.kv .v { overflow-wrap: break-word; font-variant-numeric: tabular-nums; }
+
+/* Comptes : état et actions en ligne, alignés sur le nom. */
+.reg-side { flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: flex-end; }
+@media (max-width: 520px) { .reg-side { justify-content: flex-start; } }
+
+/* Ligne de liste : titre et état sur la première ligne, détails sur toute la largeur dessous. */
+.row-item.has-num > .ri-main { display: contents; }
+.row-item.has-num > .ri-main > strong { grid-column: 2; grid-row: 1; align-self: center; }
+.row-item.has-num { row-gap: 0; }
+.row-item.has-num > .ri-main > .meta { grid-column: 2 / -1; grid-row: 2; font-size: .85rem; margin: .1rem 0 0; line-height: 1.4; }
+.row-item.has-num > .ri-num { grid-row: 1; align-self: center; }
+.row-item.has-num > .ri-side { grid-column: 3; grid-row: 1; align-self: center; }
+.meta .seg { display: inline-block; white-space: nowrap; margin-right: .65rem; }
+
 /* >>> MODE-SOMBRE-GENERE (tools/mode-sombre.py) — ne pas modifier à la main */
 :root[data-theme="dark"] {
     --paper: #0a0c18;
