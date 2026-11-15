@@ -106,7 +106,7 @@
       items = [["home", "Accueil"], ["reports", "Activités"], ["stats", "Statistiques"], ["account", "Compte"]];
     } else {
       items = [["home", "Accueil"], ["reports", "Activités"], ["form", "Nouvelle"]];
-      if (isCommission() || isAdmin()) items.push(["review", isCommission() ? "Contrôle / Valider" : "Contrôle"]);
+      if (isCommission() || isAdmin()) items.push(["review", "Contrôle"]);
       items.push(["stats", "Statistiques"]);
     }
     if (!isObserver()) items.push(["account", "Compte"]);
@@ -399,6 +399,9 @@
       return h("button", { class: "tile tile-" + ({ "Brouillons": "draft", "À corriger": "fix", "Transmis": "sent", "Validés": "ok", "À contrôler": "sent", "À valider": "val" }[t[0]] || "sent"), type: "button", onclick: function () { go(isCommunity() ? "reports" : "review", {}); } }, h("span", { class: "num", text: String(t[1]) }), h("span", { class: "lbl", text: t[0] }));
     })));
     blocks.push(moneyBlock(st, y, m));
+    if (isAdmin()) blocks.push(h("section", { class: "card" }, h("h3", { text: "Comptes du district" }),
+      h("p", { class: "hint", text: "Créez un accès, réinitialisez un mot de passe ou désactivez un compte." }),
+      h("button", { class: "btn ghost", type: "button", onclick: function () { go("accounts", {}); }, text: "Gérer les comptes" })));
     if (!D.online) blocks.push(h("p", { class: "foot", text: "Mode hors connexion : vous voyez les dernières données reçues sur cet appareil." }));
     shell(blocks);
     try { document.querySelectorAll(".tile .num").forEach(function (n) { var v = parseInt(n.textContent, 10) || 0; if (window.TTChart && v > 0) window.TTChart.animateCounter(n, v, { duration: 700 }); }); } catch (e) {}
@@ -413,11 +416,9 @@
       h("span", { class: "ri-num", "aria-hidden": "true", text: r.report_code ? r.report_code.slice(-3) : "" }),
       h("div", { class: "ri-main" },
         h("strong", { text: t ? t.label : "Activité" }),
-        h("span", { class: "muted", text: TT.fmtDate(r.activity_date) }),
-        r.report_code ? h("span", { class: "muted", text: r.report_code }) : null,
-        isCommunity() ? null : h("span", { class: "muted", text: D.communityName(r.community_id) }),
-        h("span", { class: "muted", text: (r.members_count != null ? r.members_count + " membres" : "") + (r.visitors_count ? " et " + r.visitors_count + " visiteur(s)" : "") }),
-        h("span", { class: "muted", text: tot })),
+        h("span", { class: "muted meta" }, [TT.fmtDate(r.activity_date), isCommunity() ? "" : D.communityName(r.community_id), r.report_code || "",
+          (r.members_count != null ? r.members_count + " membres" : "") + (r.visitors_count ? " et " + r.visitors_count + " visiteur(s)" : ""), tot]
+          .filter(Boolean).map(function (t) { return h("span", { class: "seg", text: t }); }))),
       h("div", { class: "ri-side" }, statusChip(r.status), syncChip(r)));
   }
   function listScreen(opts) {
@@ -442,17 +443,19 @@
     D.viewReports().forEach(function (r) { if (r.activity_date) months[r.activity_date.slice(0, 7)] = 1; });
     var controls = h("div", { class: "filters" });
     if (!opts.fixedStatuses) {
-      var sSel = h("select", { id: "f-status", onchange: function () { f.status = this.value; render(); } }, opt("", "Tous les statuts", !f.status), Object.keys(TT.STATUS).map(function (k) { return opt(k, TT.STATUS[k], f.status === k); }));
+      var sSel = h("select", { id: "f-status", onchange: function () { f.status = this.value; render(); } }, opt("", "Tous", !f.status), Object.keys(TT.STATUS).map(function (k) { return opt(k, TT.STATUS[k], f.status === k); }));
       controls.appendChild(field("Statut", sSel));
     }
     if (!isCommunity()) {
-      var cSel = h("select", { id: "f-comm", onchange: function () { f.community = this.value; render(); } }, opt("", "Toutes les communautés", !f.community), D.communities.map(function (c) { return opt(c.id, c.name, f.community === c.id); }));
+      var cSel = h("select", { id: "f-comm", onchange: function () { f.community = this.value; render(); } }, opt("", "Toutes", !f.community), D.communities.map(function (c) { return opt(c.id, c.name, f.community === c.id); }));
       controls.appendChild(field("Communauté", cSel));
     }
-    var mSel = h("select", { id: "f-month", onchange: function () { f.month = this.value; render(); } }, opt("", "Tous les mois", !f.month), Object.keys(months).sort().reverse().map(function (k) { var p = k.split("-"); return opt(k, TT.MONTHS[+p[1] - 1] + " " + p[0], f.month === k); }));
+    var mSel = h("select", { id: "f-month", onchange: function () { f.month = this.value; render(); } }, opt("", "Tous", !f.month), Object.keys(months).sort().reverse().map(function (k) { var p = k.split("-"); return opt(k, TT.MONTHS[+p[1] - 1] + " " + p[0], f.month === k); }));
     controls.appendChild(field("Mois", mSel));
     var qInput = h("input", { id: "f-q", type: "search", value: f.q || "", placeholder: "N° de fiche, date, type, rédacteur…", onchange: function () { f.q = this.value.trim(); state.listLimit = LIST_PAGE; render(); } });
-    controls.appendChild(field("Recherche", qInput, "Tapez puis validez (Entrée) : recherche par numéro de fiche, date, type, communauté ou rédacteur.", "f-q"));
+    var qField = field("Recherche", qInput, "Tapez puis validez (Entrée) : recherche par numéro de fiche, date, type, communauté ou rédacteur.", "f-q");
+    qField.classList.add("f-search");
+    controls.appendChild(qField);
     var more = total > limit ? h("div", { class: "row end" }, h("span", { class: "muted", text: "Affichées : " + rs.length + " sur " + total }), h("button", { class: "btn ghost", type: "button", text: "Afficher " + Math.min(LIST_PAGE, total - limit) + " de plus", onclick: function () { state.listLimit = limit + LIST_PAGE; render(); } })) : (total ? h("p", { class: "muted", text: total + " fiche(s)." }) : null);
     return [
       h("div", { class: "title-row" }, h("h2", { text: opts.title || "Activités" }), opts.noNew ? null : h("button", { class: "btn primary", type: "button", onclick: function () { go("form", {}); }, text: "+ Nouvelle" })),
@@ -1085,8 +1088,9 @@
     ];
     return [
       h("section", { class: "hero" },
-        h("h2", { text: "District de Tala-Tala — " + mois }),
-        h("p", { class: "muted", text: TT.ROLES[role()] })),
+        h("h2", { text: "District de Tala-Tala" }),
+        h("p", { class: "muted", text: TT.ROLES[role()] }),
+        h("p", { class: "month", text: mois })),
       moneyBlock(st, y, m),
       h("section", { class: "card" }, h("h3", { text: "Situation du district" }),
         constats.map(function (t) { return h("p", { text: t }); }),
@@ -1115,7 +1119,7 @@
           : h("p", { class: "hint", text: "Pour un nouveau mot de passe, adressez-vous à l'administrateur du district." }),
         h("div", { class: "actions" },
           isAdmin() ? h("button", { class: "btn primary", type: "button", text: "Gérer les comptes", onclick: function () { go("accounts", {}); } }) : null,
-          h("button", { class: "btn ghost", type: "button", text: "Se déconnecter", onclick: function () { logout(); } }))),
+          h("button", { class: "btn ghost rubric", type: "button", text: "Se déconnecter", onclick: function () { logout(); } }))),
     ]);
   }
 
