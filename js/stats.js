@@ -86,7 +86,19 @@
   }
 
   function presences(t) { return ((t && t.members) || 0) + ((t && t.visitors) || 0); }
-  var api = { presences: presences, cents: cents, count: count, periodRange: periodRange, compute: compute, amount: amount, reportTable: reportTable, dateFr: dateFr };
+  /* Moyennes par activité (effectifs et offrandes) : une ligne par communauté + le district. Montants en centimes, arrondis à l'unité. */
+  function averages(res) {
+    function a1(x, n) { return n ? Math.round(x / n * 10) / 10 : 0; }
+    function one(t) {
+      var n = t.n, pr = presences(t);
+      return { n: n, members: t.members, visitors: t.visitors, presences: pr, mAvg: a1(t.members, n), vAvg: a1(t.visitors, n), pAvg: a1(pr, n),
+        fc: t.fc, usd: t.usd, fcAvg: n ? Math.round(t.fc / n) : 0, usdAvg: n ? Math.round(t.usd / n) : 0 };
+    }
+    var by = {};
+    Object.keys(res.byCommunity).forEach(function (id) { if (res.byCommunity[id].n > 0) by[id] = one(res.byCommunity[id]); });
+    return { byCommunity: by, total: one(res.total) };
+  }
+  var api = { averages: averages, presences: presences, cents: cents, count: count, periodRange: periodRange, compute: compute, amount: amount, reportTable: reportTable, dateFr: dateFr };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.TTStats = api;
 })(typeof window !== "undefined" ? window : globalThis);

@@ -146,8 +146,10 @@
         svg("circle", { cx: 1, cy: 1, r: 0.4, fill: "var(--sig-rule)", opacity: 0.5 }, [])
       ])
     ]));
-    [40, 80, 120, 160].forEach(function (y) {
+    [0, 0.25, 0.5, 0.75, 1].forEach(function (f) {
+      var y = B - f * (B - T);
       kids.push(svg("line", { x1: L, y1: y, x2: R, y2: y, stroke: "var(--sig-grid)", "stroke-width": 1 }, []));
+      if (nonzero.length) kids.push(svgText(L - 5, (y + 3).toFixed(1), fmt(Math.round(f * g.max)), { "font-size": 9, fill: "var(--sig-muted)", "text-anchor": "end" }));
     });
     var areaEl = svg("path", { d: area, fill: "url(#" + id + "-area)", class: "sig-area" }, []);
     var lineEl = svg("path", { d: line, fill: "none", stroke: "url(#" + id + "-stroke)", "stroke-width": 3.5, "stroke-linecap": "round", "stroke-linejoin": "round", class: "sig-line" }, []);
@@ -170,7 +172,7 @@
       kids.push(svgText(pts[i].x.toFixed(1), 190, lab, { "font-size": 10, "font-style": "italic", fill: "var(--sig-muted)", "text-anchor": "middle" }));
     });
     if (shown && shown.v > 0) {
-      kids.push(svgText((pts[shown.i].x - 6).toFixed(1), (pts[shown.i].y - 10).toFixed(1), fmt(shown.v), { "font-size": 14, "font-weight": 600, fill: "var(--sig-ink)", "text-anchor": "end", class: "sig-value" }));
+      kids.push(svgText((pts[shown.i].x - 6).toFixed(1), (pts[shown.i].y - 10).toFixed(1), fmt(shown.v), { "font-size": 14, "font-weight": 600, fill: "var(--sig-ink)", stroke: "var(--card, #fff)", "stroke-width": 3, "paint-order": "stroke", "stroke-linejoin": "round", "text-anchor": "end", class: "sig-value" }));
     }
 
     var sv = labelled(svg("svg", { viewBox: "0 0 360 200", class: "sig sig-line-chart" }, kids), id, o.title, o.desc);

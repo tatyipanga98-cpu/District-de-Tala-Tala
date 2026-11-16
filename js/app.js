@@ -909,6 +909,9 @@
       var rows = [["Période", periodLabel], [], ["Communauté", "Activités", "Membres", "Visiteurs", "Offrandes CDF", "Offrandes USD"]];
       D.communities.forEach(function (c) { var t = res.byCommunity[c.id]; if (t) rows.push([c.name, t.n, t.members, t.visitors, S.amount(t.fc), S.amount(t.usd)]); });
       rows.push(["TOTAL", res.total.n, res.total.members, res.total.visitors, S.amount(res.total.fc), S.amount(res.total.usd)]);
+      rows.push([], ["Moyennes par activité (" + avgBasis + ")"], ["Communauté", "Activités", "Membres / activité", "Visiteurs / activité", "Présents / activité", "Offrande moyenne CDF", "Offrande moyenne USD"]);
+      D.communities.forEach(function (c) { var a = AV.byCommunity[c.id]; if (a) rows.push([c.name, a.n, a.mAvg, a.vAvg, a.pAvg, S.amount(a.fcAvg), S.amount(a.usdAvg)]); });
+      rows.push(["DISTRICT", AV.total.n, AV.total.mAvg, AV.total.vAvg, AV.total.pAvg, S.amount(AV.total.fcAvg), S.amount(AV.total.usdAvg)]);
       TT.download("statistiques-tala-tala-" + fileBase + ".csv", TT.csv(rows));
     }
     function exportFiches() {
@@ -919,7 +922,7 @@
     }
     function exportPdf(btn) {
       savePdf(TTPdf.summaryModel(res, { title: "Statistiques du district", periodLabel: periodLabel, scopeLabel: scopeName, statusLabel: statusLabels[s.statuses],
-        labels: pdfLabels(), communities: D.communities, types: D.types, periodSlug: slug(periodLabel), communitySlug: slug(scopeName) }), btn, "Utilisez « Exporter la synthèse (CSV) » sur cet écran.");
+        averages: AV, averagesBasis: avgBasis, labels: pdfLabels(), communities: D.communities, types: D.types, periodSlug: slug(periodLabel), communitySlug: slug(scopeName) }), btn, "Utilisez « Exporter la synthèse (CSV) » sur cet écran.");
     }
     
     // Taux de validation par communauté : fiches validées / fiches transmises (hors brouillons), sur la période.
@@ -940,36 +943,52 @@
               h("span", { class: p >= 80 ? "is-good" : p >= 50 ? "is-warn" : "is-bad", style: "width:" + p + "%" })));
         }));
     })();
-    // Effectifs moyens et offrandes par communauté : qui offre le plus / le moins (total et par personne présente).
+    // Effectifs moyens et offrandes par communauté (moyennes par activité). Option : services divins seulement.
+    var divineOnly = !!s.divine;
+    var avgRes = res;
+    if (divineOnly) {
+      var divIds = {}; D.types.forEach(function (t) { if (/^service divin/i.test(t.label)) divIds[t.id] = true; });
+      avgRes = S.compute(D.reports.filter(function (r) { return divIds[r.activity_type_id]; }), { from: range.from, to: range.to, statuses: statusSets[s.statuses], communityId: s.community || (isCommunity() ? D.profile.community_id : "") });
+    }
+    var AV = S.averages(avgRes);
+    var avgBasis = divineOnly ? "services divins seulement" : "toutes les activités";
     var effCard = (function () {
-      var rows = D.communities.filter(function (c) { return res.byCommunity[c.id] && res.byCommunity[c.id].n > 0; }).map(function (c) {
-        var t = res.byCommunity[c.id], pr = S.presences(t);
-        return { name: c.name, t: t, pr: pr, perFc: Math.round(t.fc / t.n), perUsd: Math.round(t.usd / t.n) };
-      });
-      if (!rows.length) return h("span", { hidden: true });
-      function avg(x, n) { return n ? (Math.round(x / n * 10) / 10).toString().replace(".", ",") : "0"; }
-      var tot = res.total, totPr = S.presences(tot);
+      var rows = D.communities.filter(function (c) { return AV.byCommunity[c.id]; }).map(function (c) { return Object.assign({ name: c.name }, AV.byCommunity[c.id]); });
+      var basisSel = sel("st-divine", divineOnly ? "1" : "", [["", "Toutes les activités"], ["1", "Services divins seulement"]], function (v) { s.divine = v === "1"; });
+      var head = h("div", { class: "filters" }, field("Moyennes calculées sur", basisSel));
+      if (!rows.length) return h("section", { class: "card" }, h("h3", { text: "Effectifs moyens et offrandes" }), head, h("p", { class: "hint", text: "Aucune activité pour ce calcul sur la période." }));
+      var fr = function (x) { return String(x).replace(".", ","); };
       function extreme(key, label, fmt) {
         var ok = rows.filter(function (r) { return r[key] > 0; });
         if (ok.length < 2) return null;
         var hi = ok.reduce(function (a, b) { return b[key] > a[key] ? b : a; }), lo = ok.reduce(function (a, b) { return b[key] < a[key] ? b : a; });
         return h("li", {}, h("strong", { text: label + " : " }), "le plus, " + hi.name + " (" + fmt(hi[key]) + ") ; le moins, " + lo.name + " (" + fmt(lo[key]) + ").");
       }
-      var hl = [extreme("pr", "Présences totales", TT.fmtInt), extreme("perFc", "Offrande moyenne par activité (CDF)", TT.fmtFC), extreme("perUsd", "Offrande moyenne par activité (USD)", TT.fmtUSD)]
-        .concat([{ k: "fc", l: "Offrandes totales (CDF)", f: TT.fmtFC }, { k: "usd", l: "Offrandes totales (USD)", f: TT.fmtUSD }].map(function (x) { return extreme_t(x); })).filter(Boolean);
-      function extreme_t(x) { var ok = rows.filter(function (r) { return r.t[x.k] > 0; }); if (ok.length < 2) return null;
-        var hi = ok.reduce(function (a, b) { return b.t[x.k] > a.t[x.k] ? b : a; }), lo = ok.reduce(function (a, b) { return b.t[x.k] < a.t[x.k] ? b : a; });
-        return h("li", {}, h("strong", { text: x.l + " : " }), "le plus, " + hi.name + " (" + x.f(hi.t[x.k]) + ") ; le moins, " + lo.name + " (" + x.f(lo.t[x.k]) + ")."); }
-      function line(label, n, t, pr, perFc, perUsd, strong) {
-        return h("tr", { class: strong ? "total" : "" }, h("th", { scope: "row", text: label }), h("td", { text: avg(t.members, n) }), h("td", { text: avg(t.visitors, n) }), h("td", { text: avg(pr, n) }),
-          h("td", { text: TT.fmtFC(perFc) }), h("td", { text: TT.fmtUSD(perUsd) }), h("td", { text: TT.fmtFC(t.fc) }), h("td", { text: TT.fmtUSD(t.usd) }));
+      var hl = [extreme("presences", "Présences totales", TT.fmtInt), extreme("fcAvg", "Offrande moyenne par activité (CDF)", TT.fmtFC), extreme("usdAvg", "Offrande moyenne par activité (USD)", TT.fmtUSD),
+        extreme("fc", "Offrandes totales (CDF)", TT.fmtFC), extreme("usd", "Offrandes totales (USD)", TT.fmtUSD)].filter(Boolean);
+      function line(label, a, strong) {
+        return h("tr", { class: strong ? "total" : "" }, h("th", { scope: "row", text: label }), h("td", { text: fr(a.mAvg) }), h("td", { text: fr(a.vAvg) }), h("td", { text: fr(a.pAvg) }),
+          h("td", { text: TT.fmtFC(a.fcAvg) }), h("td", { text: TT.fmtUSD(a.usdAvg) }), h("td", { text: TT.fmtFC(a.fc) }), h("td", { text: TT.fmtUSD(a.usd) }));
+      }
+      function bars(key, title, fmt) {
+        var max = Math.max.apply(null, rows.map(function (r) { return r[key]; }).concat([1]));
+        if (!rows.some(function (r) { return r[key] > 0; })) return null;
+        var sorted = rows.slice().sort(function (a, b) { return b[key] - a[key]; });
+        return h("div", { class: "off-bars" }, h("h4", { text: title }), sorted.map(function (r) {
+          var pct = Math.round(r[key] / max * 100);
+          return h("div", { class: "rate-row" },
+            h("div", { class: "rate-head" }, h("span", { text: r.name }), h("span", { class: "rate-val", text: fmt(r[key]) })),
+            h("div", { class: "reg-progress", role: "img", "aria-label": r.name + " : " + fmt(r[key]) }, h("span", { class: "off-fill", style: "width:" + pct + "%" })));
+        }));
       }
       return h("section", { class: "card" }, h("h3", { text: "Effectifs moyens et offrandes" }),
-        h("p", { class: "hint", text: "Moyennes par activité, pour les effectifs comme pour les offrandes. Les montants en CDF et en USD sont comparés séparément." }),
+        h("p", { class: "hint", text: "Moyennes par activité. Les montants en CDF et en USD sont comparés séparément." }), head,
         h("div", { class: "scroll" }, h("table", {},
-          h("thead", {}, h("tr", {}, h("th", { text: "Communauté" }), h("th", { text: "Membres / activité" }), h("th", { text: "Visiteurs / activité" }), h("th", { text: "Présents / activité" }), h("th", { text: "Offrande moy. / activité (CDF)" }), h("th", { text: "Offrande moy. / activité (USD)" }), h("th", { text: "Offrandes totales (CDF)" }), h("th", { text: "Offrandes totales (USD)" }))),
-          h("tbody", {}, rows.map(function (r) { return line(r.name, r.t.n, r.t, r.pr, r.perFc, r.perUsd); })),
-          h("tfoot", {}, line("District", tot.n, tot, totPr, tot.n ? Math.round(tot.fc / tot.n) : 0, tot.n ? Math.round(tot.usd / tot.n) : 0, true)))),
+          h("thead", {}, h("tr", {}, h("th", { text: "Communauté" }), h("th", { text: "Membres / activité" }), h("th", { text: "Visiteurs / activité" }), h("th", { text: "Présents / activité" }),
+            h("th", { text: "Offrande moy. / activité (CDF)" }), h("th", { text: "Offrande moy. / activité (USD)" }), h("th", { text: "Offrandes totales (CDF)" }), h("th", { text: "Offrandes totales (USD)" }))),
+          h("tbody", {}, rows.map(function (r) { return line(r.name, r); })),
+          h("tfoot", {}, line("District", AV.total, true)))),
+        rows.length > 1 ? [bars("fcAvg", "Offrande moyenne par activité (CDF)", TT.fmtFC), bars("usdAvg", "Offrande moyenne par activité (USD)", TT.fmtUSD)] : null,
         hl.length ? [h("h3", { text: "Qui offre le plus, qui offre le moins" }), h("ul", { class: "hint" }, hl)] : null);
     })();
     shell([
@@ -979,7 +998,7 @@
       // --- BLOC GRAPHIQUES ---
       h("section", { class: "charts", "aria-labelledby": "charts-title", style: "margin-bottom:1.5rem;" },
         h("h2", { id: "charts-title", class: "sr-only", text: "Vues graphiques" }),
-        h("div", { class: "chart-card" }, h("h3", { text: "Évolution sur 12 mois" }), h("p", { class: "chart-sub", text: "Présences (membres et visiteurs) de l'année choisie ; le mois choisi est mis en avant." }), h("div", { id: "sig-parchemin" })),
+        h("div", { class: "chart-card" }, h("h3", { text: "Évolution sur 12 mois" }), h("p", { class: "chart-sub", text: "Présences (membres et visiteurs) de l'année choisie ; le mois choisi est mis en avant." + (s.statuses === "validated" ? " Seules les fiches validées sont comptées : les mois récents paraissent bas tant que des fiches attendent leur validation." : "") }), h("div", { id: "sig-parchemin" })),
         h("div", { class: "chart-card" }, h("h3", { text: "Classement des communautés" }), h("p", { class: "chart-sub", text: "Présences (membres et visiteurs) par communauté sur la période. Touchez une ligne pour le détail." }), h("div", { id: "sig-honneur" })),
         h("div", { class: "chart-card" }, h("h3", { text: "Répartition par type d'activité" }), h("p", { class: "chart-sub", text: "Part de chaque type dans le total de la période." }), h("div", { id: "sig-roue" })),
         h("div", { class: "chart-card" }, h("h3", { text: "Calendrier du mois" }), h("p", { class: "chart-sub", text: "Activités par jour. Touchez une case pour voir le détail." }), h("div", { id: "sig-almanach" }))

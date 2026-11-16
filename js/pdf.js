@@ -106,6 +106,13 @@
         : { type: "para", text: "Aucune fiche pour cette période avec ces critères." }
     ];
     if (tot.n) {
+      if (meta.averages) {
+        var AV = meta.averages, fr = function (x) { return String(x).replace(".", ","); };
+        var avRow = function (label, a) { return [label, S.count(a.n), fr(a.mAvg), fr(a.vAvg), fr(a.pAvg), S.amount(a.fcAvg, "FC"), S.amount(a.usdAvg, "$")]; };
+        blocks.push({ type: "heading", text: "Moyennes par activité (" + (meta.averagesBasis || "toutes les activités") + ")" });
+        blocks.push({ type: "table", head: ["Communauté", "Activités", "Membres", "Visiteurs", "Présents", "Offrande moy. CDF", "Offrande moy. USD"], widths: [0.24, 0.1, 0.11, 0.11, 0.11, 0.165, 0.165], align: ["l", "r", "r", "r", "r", "r", "r"],
+          rows: meta.communities.filter(function (c) { return AV.byCommunity[c.id]; }).map(function (c) { return avRow(c.name, AV.byCommunity[c.id]); }), total: avRow("District", AV.total) });
+      }
       blocks.push({ type: "heading", text: "Par type d'activité" });
       blocks.push({ type: "table", head: ["Type", "Activités", "Membres", "Visiteurs", "Offrandes CDF", "Offrandes USD"], widths: [0.3, 0.12, 0.13, 0.13, 0.16, 0.16], align: ["l", "r", "r", "r", "r", "r"], rows: typeRows });
       if (actKeys.length) {
