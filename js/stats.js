@@ -85,7 +85,8 @@
     return p.length === 3 ? p[2] + "/" + p[1] + "/" + p[0] : String(s);
   }
 
-  var api = { cents: cents, count: count, periodRange: periodRange, compute: compute, amount: amount, reportTable: reportTable, dateFr: dateFr };
+  function presences(t) { return ((t && t.members) || 0) + ((t && t.visitors) || 0); }
+  var api = { presences: presences, cents: cents, count: count, periodRange: periodRange, compute: compute, amount: amount, reportTable: reportTable, dateFr: dateFr };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.TTStats = api;
 })(typeof window !== "undefined" ? window : globalThis);

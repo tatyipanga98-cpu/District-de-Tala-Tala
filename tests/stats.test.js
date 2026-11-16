@@ -68,6 +68,10 @@ check("mars validé : membres 150, visiteurs 15", function () {
   var t = S.compute(REF, MARS_VALIDE).total;
   assert.strictEqual(t.members, 150); assert.strictEqual(t.visitors, 15);
 });
+check("présences = membres + visiteurs (mars validé : 165)", function () {
+  assert.strictEqual(S.presences(S.compute(REF, MARS_VALIDE).total), 165);
+  assert.strictEqual(S.presences(null), 0);
+});
 check("mars validé : offrandes 160 000 FC et 320,25 USD (en centimes, sans arrondi)", function () {
   var t = S.compute(REF, MARS_VALIDE).total;
   assert.strictEqual(t.fc, 16000000); assert.strictEqual(t.usd, 32025);
