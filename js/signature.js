@@ -123,8 +123,11 @@
     var low = nonzero.length > 1 ? nonzero.reduce(function (a, b) { return b.v < a.v ? b : a; }) : null;
     var last = nonzero.length ? nonzero[nonzero.length - 1] : null;
 
-    var line = smoothPath(pts, T, B);
-    var area = line + " L" + R + "," + B + " L" + L + "," + B + " Z";
+    /* Les mois sans donnée après le dernier mois renseigné (à venir) ne sont pas tracés : pas de chute fictive à zéro. */
+    var drawN = last ? last.i + 1 : pts.length;
+    var drawPts = pts.slice(0, drawN);
+    var line = smoothPath(drawPts, T, B);
+    var area = line + " L" + drawPts[drawPts.length - 1].x.toFixed(1) + "," + B + " L" + L + "," + B + " Z";
 
     var kids = [];
     kids.push(svg("defs", {}, [
@@ -149,7 +152,7 @@
     kids.push(areaEl, lineEl);
 
     var seals = svg("g", { class: "sig-seals" }, []);
-    var sealEls = pts.map(function (p, i) {
+    var sealEls = drawPts.map(function (p, i) {
       var isPeak = peak && i === peak.i, isLow = low && i === low.i;
       var c = svg("circle", {
         cx: p.x.toFixed(1), cy: p.y.toFixed(1), r: isPeak ? 6 : 4,
@@ -301,6 +304,7 @@
     var n = rows.length;
     var total = rows.reduce(function (s, r) { return s + r.value; }, 0);
     if (!n) return "Aucune activité à classer sur " + periodLabel + ".";
+    if (n === 1) return rows[0].name + " : " + fmt(total) + " présences, " + periodLabel + ". Aucun classement : une seule communauté sur cette vue.";
     if (mine >= 0) {
       return rows[mine].name + ", " + (mine + 1) + (mine === 0 ? "re" : "ᵉ") + " des " + n + " communauté" + (n > 1 ? "s" : "") +
         " pour les présences, " + periodLabel + ". Le total du district est de " + fmt(total) + ".";

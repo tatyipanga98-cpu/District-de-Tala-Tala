@@ -755,11 +755,11 @@
     var submitLabel = isCommunity() ? "Enregistrer et transmettre" : "Enregistrer et soumettre au contrôle";
     var title = existing ? "Modifier l'activité" : copy ? "Correction d'une fiche validée" : "Nouvelle activité";
     var actions = h("div", { class: "actions form-actions" },
-        h("button", { class: "linklike", type: "button", onclick: function () { formDirty = false; history.length > 1 ? history.back() : go("reports"); }, text: "Annuler" }),
+        h("button", { class: "btn ghost", type: "button", onclick: function () { formDirty = false; history.length > 1 ? history.back() : go("reports"); }, text: "Annuler" }),
         (editingSynced && !isCommunity())
           ? h("button", { class: "btn primary", type: "submit", text: "Enregistrer les modifications" })
-          : [h("button", { class: "linklike form-draft", type: "submit", text: "Enregistrer le brouillon" }),
-             h("button", { class: "btn primary", type: "button", onclick: function () { save(true); }, text: isCommunity() ? "Transmettre" : "Soumettre au contrôle" })]);
+          : [h("button", { class: "btn ghost form-draft", type: "submit", "aria-label": "Enregistrer le brouillon", title: "Enregistrer le brouillon", text: "Brouillon" }),
+             h("button", { class: "btn primary", type: "button", onclick: function () { save(true); }, text: isCommunity() ? "Transmettre" : "Soumettre" })]);
     /* Brouillon automatique : la saisie en cours (sans validation) est gardée sur cet appareil jusqu'à l'enregistrement
        de la fiche. Ce n'est pas la file d'envoi : rien n'est transmis tant que l'utilisateur n'enregistre pas. */
     function pad2(n) { return (n < 10 ? "0" : "") + n; }
