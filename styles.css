@@ -1188,6 +1188,11 @@ main::before { display: none; }
 .row-item.has-num > .ri-side { grid-column: 3; grid-row: 1; align-self: center; }
 .meta .seg { display: inline-block; white-space: nowrap; margin-right: .65rem; }
 
+/* Formulaire : Annuler et Enregistrer le brouillon sont de vrais boutons (contour), comme Transmettre */
+.form-actions .btn.ghost { padding: .6rem .7rem; font-size: .88rem; font-weight: 600; white-space: nowrap; min-height: 44px; }
+.form-actions .btn.ghost.form-draft { border-color: var(--navy); color: var(--navy); }
+.form-actions { gap: .45rem; }
+
 /* >>> MODE-SOMBRE-GENERE (tools/mode-sombre.py) — ne pas modifier à la main */
 :root[data-theme="dark"] {
     --paper: #0a0c18;

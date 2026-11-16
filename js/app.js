@@ -755,11 +755,11 @@
     var submitLabel = isCommunity() ? "Enregistrer et transmettre" : "Enregistrer et soumettre au contrôle";
     var title = existing ? "Modifier l'activité" : copy ? "Correction d'une fiche validée" : "Nouvelle activité";
     var actions = h("div", { class: "actions form-actions" },
-        h("button", { class: "linklike", type: "button", onclick: function () { formDirty = false; history.length > 1 ? history.back() : go("reports"); }, text: "Annuler" }),
+        h("button", { class: "btn ghost", type: "button", onclick: function () { formDirty = false; history.length > 1 ? history.back() : go("reports"); }, text: "Annuler" }),
         (editingSynced && !isCommunity())
           ? h("button", { class: "btn primary", type: "submit", text: "Enregistrer les modifications" })
-          : [h("button", { class: "linklike form-draft", type: "submit", text: "Enregistrer le brouillon" }),
-             h("button", { class: "btn primary", type: "button", onclick: function () { save(true); }, text: isCommunity() ? "Transmettre" : "Soumettre au contrôle" })]);
+          : [h("button", { class: "btn ghost form-draft", type: "submit", "aria-label": "Enregistrer le brouillon", title: "Enregistrer le brouillon", text: "Brouillon" }),
+             h("button", { class: "btn primary", type: "button", onclick: function () { save(true); }, text: isCommunity() ? "Transmettre" : "Soumettre" })]);
     /* Brouillon automatique : la saisie en cours (sans validation) est gardée sur cet appareil jusqu'à l'enregistrement
        de la fiche. Ce n'est pas la file d'envoi : rien n'est transmis tant que l'utilisateur n'enregistre pas. */
     function pad2(n) { return (n < 10 ? "0" : "") + n; }
@@ -979,7 +979,7 @@
       // --- BLOC GRAPHIQUES ---
       h("section", { class: "charts", "aria-labelledby": "charts-title", style: "margin-bottom:1.5rem;" },
         h("h2", { id: "charts-title", class: "sr-only", text: "Vues graphiques" }),
-        h("div", { class: "chart-card" }, h("h3", { text: "Évolution sur 12 mois" }), h("p", { class: "chart-sub", text: "Présences (membres et visiteurs), toutes communautés confondues." }), h("div", { id: "sig-parchemin" })),
+        h("div", { class: "chart-card" }, h("h3", { text: "Évolution sur 12 mois" }), h("p", { class: "chart-sub", text: "Présences (membres et visiteurs) de l'année choisie ; le mois choisi est mis en avant." }), h("div", { id: "sig-parchemin" })),
         h("div", { class: "chart-card" }, h("h3", { text: "Classement des communautés" }), h("p", { class: "chart-sub", text: "Présences (membres et visiteurs) par communauté sur la période. Touchez une ligne pour le détail." }), h("div", { id: "sig-honneur" })),
         h("div", { class: "chart-card" }, h("h3", { text: "Répartition par type d'activité" }), h("p", { class: "chart-sub", text: "Part de chaque type dans le total de la période." }), h("div", { id: "sig-roue" })),
         h("div", { class: "chart-card" }, h("h3", { text: "Calendrier du mois" }), h("p", { class: "chart-sub", text: "Activités par jour. Touchez une case pour voir le détail." }), h("div", { id: "sig-almanach" }))
@@ -1002,6 +1002,7 @@
     ]);
 
     // Déclenchement du dessin des graphiques après le rendu HTML
+    chartStats.focusMonth = s.kind === "month" ? s.idx - 1 : undefined;
     chartStats.periodLabel = periodLabel;
     chartStats.scopeName = scopeName;
     setTimeout(function () {
@@ -1267,6 +1268,7 @@ window.mountStatsCharts = function (stats) {
       values: values,
       labels: stats.byMonth.map((m) => m.shortLabel || m.label),
       year: stats.year,
+      focus: stats.focusMonth,
       title: 'Présences mois par mois en ' + stats.year,
       desc: 'Présences par mois en ' + stats.year + ' : ' + values.map((v, i) => months[i] + ' ' + fmtN(v)).join(', ') + '.',
     });

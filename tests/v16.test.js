@@ -101,7 +101,7 @@ const rep = (id, d, t, rc, st = 'submitted') => ({ id, report_code: 'TT-2026-000
   ({ ctx, p, calls: _c } = await run(b, 'Armine Lubamba', 'community_clerk', [rep('r3', '2026-11-04', 't1', 'RC-77')], '2026-11-14T02:34:00Z'));
   await p.locator('button', { hasText: 'Rédiger le rapport' }).click(); await p.waitForTimeout(300);
   await p.fill('#fm-mem', '10'); await p.fill('#fm-off', 'Test'); await p.fill('#fm-receipt', ' rc-77 ');
-  await p.locator('button', { hasText: 'Enregistrer le brouillon' }).click(); await p.waitForTimeout(400);
+  await p.locator('button', { hasText: 'Brouillon' }).click(); await p.waitForTimeout(400);
   const msg = await p.locator('.msg.bad').innerText();
   check('reçu en double : message clair', msg.includes('déjà utilisé'), msg);
   // Observateurs (Responsable / Suppléant) : constat, navigation sans saisie, fiche en consultation

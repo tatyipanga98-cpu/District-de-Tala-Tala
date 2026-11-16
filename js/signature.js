@@ -122,9 +122,14 @@
     var peak = nonzero.length ? nonzero.reduce(function (a, b) { return b.v > a.v ? b : a; }) : null;
     var low = nonzero.length > 1 ? nonzero.reduce(function (a, b) { return b.v < a.v ? b : a; }) : null;
     var last = nonzero.length ? nonzero[nonzero.length - 1] : null;
+    /* Mois mis en avant : celui choisi dans les filtres (o.focus, 0 à 11), sinon le dernier mois renseigné. */
+    var shown = (typeof o.focus === "number" && o.focus >= 0 && o.focus < 12) ? { v: values[o.focus], i: o.focus } : last;
 
-    var line = smoothPath(pts, T, B);
-    var area = line + " L" + R + "," + B + " L" + L + "," + B + " Z";
+    /* Les mois sans donnée après le dernier mois renseigné (à venir) ne sont pas tracés : pas de chute fictive à zéro. */
+    var drawN = last ? last.i + 1 : pts.length;
+    var drawPts = pts.slice(0, drawN);
+    var line = smoothPath(drawPts, T, B);
+    var area = line + " L" + drawPts[drawPts.length - 1].x.toFixed(1) + "," + B + " L" + L + "," + B + " Z";
 
     var kids = [];
     kids.push(svg("defs", {}, [
@@ -149,7 +154,7 @@
     kids.push(areaEl, lineEl);
 
     var seals = svg("g", { class: "sig-seals" }, []);
-    var sealEls = pts.map(function (p, i) {
+    var sealEls = drawPts.map(function (p, i) {
       var isPeak = peak && i === peak.i, isLow = low && i === low.i;
       var c = svg("circle", {
         cx: p.x.toFixed(1), cy: p.y.toFixed(1), r: isPeak ? 6 : 4,
@@ -164,8 +169,8 @@
     o.labels.slice(0, 12).forEach(function (lab, i) {
       kids.push(svgText(pts[i].x.toFixed(1), 190, lab, { "font-size": 10, "font-style": "italic", fill: "var(--sig-muted)", "text-anchor": "middle" }));
     });
-    if (last) {
-      kids.push(svgText((pts[last.i].x - 6).toFixed(1), (pts[last.i].y - 10).toFixed(1), fmt(last.v), { "font-size": 14, "font-weight": 600, fill: "var(--sig-ink)", "text-anchor": "end", class: "sig-value" }));
+    if (shown && shown.v > 0) {
+      kids.push(svgText((pts[shown.i].x - 6).toFixed(1), (pts[shown.i].y - 10).toFixed(1), fmt(shown.v), { "font-size": 14, "font-weight": 600, fill: "var(--sig-ink)", "text-anchor": "end", class: "sig-value" }));
     }
 
     var sv = labelled(svg("svg", { viewBox: "0 0 360 200", class: "sig sig-line-chart" }, kids), id, o.title, o.desc);
@@ -214,12 +219,13 @@
     });
 
     return {
-      legend: parcheminLegend(values, o.year, peak, nonzero, last),
+      legend: parcheminLegend(values, o.year, peak, nonzero, shown),
       rows: values.map(function (v, i) { return { month: MONTHS[i], value: v }; })
     };
   }
   function parcheminLegend(values, year, peak, nonzero, last) {
     if (!last) return "Aucune présence enregistrée sur l'année " + year + ".";
+    if (!last.v) return "Aucune présence enregistrée en " + MONTHS[last.i] + " " + year + ".";
     var avg = nonzero.reduce(function (s, x) { return s + x.v; }, 0) / nonzero.length;
     var delta = avg ? Math.round((last.v - avg) / avg * 100) : 0;
     var dtxt = (delta >= 0 ? "+" : "") + delta + " %";
@@ -301,6 +307,7 @@
     var n = rows.length;
     var total = rows.reduce(function (s, r) { return s + r.value; }, 0);
     if (!n) return "Aucune activité à classer sur " + periodLabel + ".";
+    if (n === 1) return rows[0].name + " : " + fmt(total) + " présences, " + periodLabel + ". Aucun classement : une seule communauté sur cette vue.";
     if (mine >= 0) {
       return rows[mine].name + ", " + (mine + 1) + (mine === 0 ? "re" : "ᵉ") + " des " + n + " communauté" + (n > 1 ? "s" : "") +
         " pour les présences, " + periodLabel + ". Le total du district est de " + fmt(total) + ".";
