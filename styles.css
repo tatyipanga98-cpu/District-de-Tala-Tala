@@ -1258,3 +1258,55 @@ main::before { display: none; }
     --sig-l1: #1b3a66; --sig-l2: #2f7fd1; --sig-l3: #5b7cff;
   }
 /* <<< MODE-SOMBRE-GENERE */
+/* ==========================================================================
+   v17.1 — Corrections de lisibilité
+   (Légende des couleurs, notes par statut, logo doré, donut, placeholders)
+   ========================================================================== */
+
+/* Légende des couleurs du graphique linéaire */
+.sig-color-legend { 
+  list-style: none; padding: 0; margin: .6rem 0 0; 
+  display: flex; flex-wrap: wrap; gap: .4rem .9rem; 
+  font-size: .82rem; color: var(--muted); 
+  font-variant-caps: small-caps; letter-spacing: .04em; 
+}
+.sig-color-legend li { display: inline-flex; align-items: center; gap: .35rem; }
+.sig-color-legend .sw { display: inline-block; width: .7rem; height: .7rem; border-radius: 2px; flex-shrink: 0; }
+
+/* Notes contextuelles sous le graphique */
+.sig-note.is-validated { border-left-color: var(--viz-1); background: var(--sky-soft); }
+.sig-note.is-pending { border-left-color: var(--viz-4); background: var(--good-bg); }
+.sig-note.is-empty { border-left-color: var(--viz-6); background: var(--bad-bg); }
+.sig-note .sig-status { display: block; margin-top: .2rem; font-size: .85rem; color: var(--ink-2); }
+
+/* Adaptation des notes au mode sombre */
+:root[data-theme="dark"] .sig-note.is-pending { background: rgba(61, 220, 151, .12); }
+:root[data-theme="dark"] .sig-note.is-empty { background: rgba(255, 122, 112, .12); }
+:root[data-theme="dark"] .sig-note.is-validated { background: rgba(91, 124, 255, .14); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .sig-note.is-pending { background: rgba(61, 220, 151, .12); }
+  :root:not([data-theme="light"]) .sig-note.is-empty { background: rgba(255, 122, 112, .12); }
+  :root:not([data-theme="light"]) .sig-note.is-validated { background: rgba(91, 124, 255, .14); }
+}
+
+/* Logo du header : transparent avec filet doré */
+header.top .brand img { 
+  background: transparent; 
+  border: 1.5px solid var(--reg-gold, #a8863e); 
+  padding: 2px; 
+  border-radius: 50%;
+}
+
+/* Légende externe du donut */
+.sig-donut-legend { list-style: none; padding: 0; margin: .8rem 0 0; display: grid; gap: .4rem; font-size: .88rem; }
+.sig-donut-legend li { display: grid; grid-template-columns: .8rem 1fr auto; align-items: center; gap: .6rem; }
+.sig-donut-legend .sw { width: .8rem; height: .8rem; border-radius: 2px; display: block; }
+.sig-donut-legend .lbl { color: var(--ink-2); }
+.sig-donut-legend .val { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--ink); }
+
+/* Distinction entre valeur saisie et placeholder */
+input, select, textarea { color: var(--ink); }
+input::placeholder, textarea::placeholder { color: var(--muted); font-style: italic; opacity: 1; }
+select:invalid { color: var(--muted); font-style: italic; }
+select option { color: var(--ink); font-style: normal; }
+select:valid { color: var(--ink); font-style: normal; }
