@@ -62,6 +62,7 @@ const navTo = async (p, label) => { await p.evaluate((l) => { const b = [...docu
     check('CSP présente et restreint les scripts à l\'origine', !!csp && csp.includes("script-src 'self'") && csp.includes('connect-src \'self\' https://kpdyowuhxekajsbnormp.supabase.co'));
     await navTo(p, 'Stats');
     check('écran statistiques : bouton PDF de synthèse', (await p.locator('button', { hasText: 'Télécharger la synthèse (PDF)' }).count()) === 1);
+    check('écran statistiques : bloc effectifs moyens et offrandes', (await p.locator('h3', { hasText: 'Effectifs moyens et offrandes' }).count()) === 1);
     check('écran statistiques : pas d\'impression navigateur', (await p.locator('button', { hasText: 'Imprimer' }).count()) === 0);
     // 2. Téléchargement du PDF de synthèse (statuts : toutes les fiches)
     await p.selectOption('#st-status', 'all');
