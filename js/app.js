@@ -851,7 +851,7 @@
       byCommunity: Object.keys(res.byCommunity).map(function (id) {
         var c = D.communities.find(function (x) { return x.id === id; });
         var t = res.byCommunity[id];
-        return { id: id, name: c ? c.name : id, total: t.n, isMine: isCommunity() && D.profile.community_id === id,
+        return { id: id, name: c ? c.name : id, total: S.presences(t), isMine: isCommunity() && D.profile.community_id === id,
           items: ["Présences : " + TT.fmtInt(t.members) + " membres, " + TT.fmtInt(t.visitors) + " visiteurs", "Offrandes : " + TT.fmtFC(t.fc) + " ; " + TT.fmtUSD(t.usd)] };
       }).sort(function(a, b) { return b.total - a.total; }),
       byType: Object.keys(res.byType).map(function (id) {
@@ -865,7 +865,7 @@
     for (var m = 1; m <= 12; m++) {
       var r = S.periodRange("month", s.year, m);
       var mRes = S.compute(D.reports, { from: r.from, to: r.to, statuses: statusSets[s.statuses], communityId: s.community || (isCommunity() ? D.profile.community_id : "") });
-      chartStats.byMonth.push({ label: TT.MONTHS[m-1], shortLabel: TT.MONTHS[m-1].substring(0,3), total: mRes.total.n });
+      chartStats.byMonth.push({ label: TT.MONTHS[m-1], shortLabel: TT.MONTHS[m-1].substring(0,3), total: S.presences(mRes.total) });
     }
     // Calendrier : activités par jour du mois affiché (le dernier mois de la période si ce n'est pas un mois)
     var almMonth = s.kind === "month" ? s.idx : s.kind === "quarter" ? s.idx * 3 : 12;
@@ -947,8 +947,8 @@
       // --- BLOC GRAPHIQUES ---
       h("section", { class: "charts", "aria-labelledby": "charts-title", style: "margin-bottom:1.5rem;" },
         h("h2", { id: "charts-title", class: "sr-only", text: "Vues graphiques" }),
-        h("div", { class: "chart-card" }, h("h3", { text: "Évolution sur 12 mois" }), h("p", { class: "chart-sub", text: "Présences totales, toutes communautés confondues." }), h("div", { id: "sig-parchemin" })),
-        h("div", { class: "chart-card" }, h("h3", { text: "Classement des communautés" }), h("p", { class: "chart-sub", text: "Présences par communauté sur la période. Touchez une ligne pour le détail." }), h("div", { id: "sig-honneur" })),
+        h("div", { class: "chart-card" }, h("h3", { text: "Évolution sur 12 mois" }), h("p", { class: "chart-sub", text: "Présences (membres et visiteurs), toutes communautés confondues." }), h("div", { id: "sig-parchemin" })),
+        h("div", { class: "chart-card" }, h("h3", { text: "Classement des communautés" }), h("p", { class: "chart-sub", text: "Présences (membres et visiteurs) par communauté sur la période. Touchez une ligne pour le détail." }), h("div", { id: "sig-honneur" })),
         h("div", { class: "chart-card" }, h("h3", { text: "Répartition par type d'activité" }), h("p", { class: "chart-sub", text: "Part de chaque type dans le total de la période." }), h("div", { id: "sig-roue" })),
         h("div", { class: "chart-card" }, h("h3", { text: "Calendrier du mois" }), h("p", { class: "chart-sub", text: "Activités par jour. Touchez une case pour voir le détail." }), h("div", { id: "sig-almanach" }))
       ),
