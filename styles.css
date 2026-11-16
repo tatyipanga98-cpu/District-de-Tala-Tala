@@ -1310,3 +1310,15 @@ input::placeholder, textarea::placeholder { color: var(--muted); font-style: ita
 select:invalid { color: var(--muted); font-style: italic; }
 select option { color: var(--ink); font-style: normal; }
 select:valid { color: var(--ink); font-style: normal; }
+
+/* Pastilles de la légende (mêmes couleurs que la courbe) */
+.sig-color-legend .sw-validated { background: var(--viz-1); }
+.sig-color-legend .sw-pending { background: var(--viz-4); }
+.sig-color-legend .sw-empty { background: var(--viz-6); }
+
+/* Valeurs saisies en encre foncée ; invites (placeholders, choix « Choisir… ») en gris italique */
+input, select, textarea { color: var(--ink); }
+input::placeholder, textarea::placeholder { color: var(--muted); font-style: italic; }
+select:required:invalid { color: var(--muted); font-style: italic; }
+select:required:valid { font-style: normal; }
+select option { color: var(--ink); font-style: normal; }

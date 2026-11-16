@@ -88,6 +88,14 @@
   }
   function level(count) { return count <= 0 ? 0 : count === 1 ? 1 : count === 2 ? 2 : 3; }
   var VIZ = ["var(--viz-1)", "var(--viz-2)", "var(--viz-3)", "var(--viz-4)", "var(--viz-5)", "var(--viz-6)"];
+  /* Statut d'un mois : validated (bleu), pending (vert, en attente de validation), empty (rouge, aucune fiche), future (non tracé). */
+  var STATUS_COLOR = { validated: "var(--viz-1)", pending: "var(--viz-4)", empty: "var(--viz-6)", future: "var(--sig-muted)" };
+  var STATUS_TEXT = {
+    validated: "Données validées, chiffres officiels.",
+    pending: "Données transmises, en attente de validation par la Commission.",
+    empty: "Aucune fiche transmise pour ce mois.",
+    future: "Mois à venir."
+  };
   function segmentColor(label, i) {
     var l = (label || "").toLowerCase();
     if (/ordinaire/.test(l)) return "var(--viz-1)";
@@ -151,8 +159,20 @@
       kids.push(svg("line", { x1: L, y1: y, x2: R, y2: y, stroke: "var(--sig-grid)", "stroke-width": 1 }, []));
       if (nonzero.length) kids.push(svgText(L - 5, (y + 3).toFixed(1), fmt(Math.round(f * g.max)), { "font-size": 9, fill: "var(--sig-muted)", "text-anchor": "end" }));
     });
+    var st = Array.isArray(o.status) && o.status.length >= 12 ? o.status : null;
+    var strokeRef = "url(#" + id + "-stroke)";
+    if (st && drawPts.length > 1) {
+      var x0 = drawPts[0].x, x1 = drawPts[drawPts.length - 1].x, stops = [];
+      for (var k = 1; k < drawPts.length; k++) {
+        var col = STATUS_COLOR[st[k]] || STATUS_COLOR.validated;
+        stops.push(svg("stop", { offset: ((drawPts[k - 1].x - x0) / (x1 - x0)).toFixed(4), "stop-color": col }, []));
+        stops.push(svg("stop", { offset: ((drawPts[k].x - x0) / (x1 - x0)).toFixed(4), "stop-color": col }, []));
+      }
+      kids[0].appendChild(svg("linearGradient", { id: id + "-status", gradientUnits: "userSpaceOnUse", x1: x0.toFixed(1), y1: 0, x2: x1.toFixed(1), y2: 0 }, stops));
+      strokeRef = "url(#" + id + "-status)";
+    }
     var areaEl = svg("path", { d: area, fill: "url(#" + id + "-area)", class: "sig-area" }, []);
-    var lineEl = svg("path", { d: line, fill: "none", stroke: "url(#" + id + "-stroke)", "stroke-width": 3.5, "stroke-linecap": "round", "stroke-linejoin": "round", class: "sig-line" }, []);
+    var lineEl = svg("path", { d: line, fill: "none", stroke: strokeRef, "stroke-width": 3.5, "stroke-linecap": "round", "stroke-linejoin": "round", class: "sig-line" }, []);
     kids.push(areaEl, lineEl);
 
     var seals = svg("g", { class: "sig-seals" }, []);
@@ -160,7 +180,7 @@
       var isPeak = peak && i === peak.i, isLow = low && i === low.i;
       var c = svg("circle", {
         cx: p.x.toFixed(1), cy: p.y.toFixed(1), r: isPeak ? 6 : 4,
-        fill: isPeak ? "var(--viz-3)" : isLow ? "var(--viz-6)" : "var(--viz-1)"
+        fill: st ? (STATUS_COLOR[st[i]] || STATUS_COLOR.validated) : isPeak ? "var(--viz-3)" : isLow ? "var(--viz-6)" : "var(--viz-1)"
       }, []);
       c.setAttribute("data-i", i);
       seals.appendChild(c);
@@ -185,12 +205,13 @@
       var p = values[i], m = MONTHS[i];
       var cap = (m.charAt(0).toUpperCase() + m.slice(1)) + " " + o.year;
       var phrase = p ? fmt(p) + " présences." : "Aucune présence enregistrée.";
-      var kind = peak && i === peak.i ? " is-record" : low && i === low.i && nonzero.length > 1 ? " is-low" : "";
+      var kind = st ? " is-" + st[i] : peak && i === peak.i ? " is-record" : low && i === low.i && nonzero.length > 1 ? " is-low" : "";
       note.className = "sig-note" + kind;
       note.replaceChildren ? note.replaceChildren() : (note.innerHTML = "");
       note.appendChild(el("span", { class: "sig-cap", text: cap }, []));
       note.appendChild(el("strong", { class: "sig-big", text: fmt(p) }, []));
       note.appendChild(el("span", { class: "sig-phrase", text: phrase + (peak && i === peak.i ? " Le mois le plus fréquenté de l'année." : "") }, []));
+      if (st && STATUS_TEXT[st[i]]) note.appendChild(el("span", { class: "sig-status", text: STATUS_TEXT[st[i]] }, []));
     }
     svg_tap(sv, function (clientX) {
       var rect = sv.getBoundingClientRect();
