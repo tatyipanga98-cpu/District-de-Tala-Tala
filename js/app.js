@@ -944,7 +944,7 @@
     var effCard = (function () {
       var rows = D.communities.filter(function (c) { return res.byCommunity[c.id] && res.byCommunity[c.id].n > 0; }).map(function (c) {
         var t = res.byCommunity[c.id], pr = S.presences(t);
-        return { name: c.name, t: t, pr: pr, perFc: pr ? Math.round(t.fc / pr) : 0, perUsd: pr ? Math.round(t.usd / pr) : 0 };
+        return { name: c.name, t: t, pr: pr, perFc: Math.round(t.fc / t.n), perUsd: Math.round(t.usd / t.n) };
       });
       if (!rows.length) return h("span", { hidden: true });
       function avg(x, n) { return n ? (Math.round(x / n * 10) / 10).toString().replace(".", ",") : "0"; }
@@ -955,21 +955,21 @@
         var hi = ok.reduce(function (a, b) { return b[key] > a[key] ? b : a; }), lo = ok.reduce(function (a, b) { return b[key] < a[key] ? b : a; });
         return h("li", {}, h("strong", { text: label + " : " }), "le plus, " + hi.name + " (" + fmt(hi[key]) + ") ; le moins, " + lo.name + " (" + fmt(lo[key]) + ").");
       }
-      var hl = [extreme("pr", "Présences totales", TT.fmtInt), extreme("perFc", "Offrande moyenne par personne présente (CDF)", TT.fmtFC), extreme("perUsd", "Offrande moyenne par personne présente (USD)", TT.fmtUSD)]
+      var hl = [extreme("pr", "Présences totales", TT.fmtInt), extreme("perFc", "Offrande moyenne par activité (CDF)", TT.fmtFC), extreme("perUsd", "Offrande moyenne par activité (USD)", TT.fmtUSD)]
         .concat([{ k: "fc", l: "Offrandes totales (CDF)", f: TT.fmtFC }, { k: "usd", l: "Offrandes totales (USD)", f: TT.fmtUSD }].map(function (x) { return extreme_t(x); })).filter(Boolean);
       function extreme_t(x) { var ok = rows.filter(function (r) { return r.t[x.k] > 0; }); if (ok.length < 2) return null;
         var hi = ok.reduce(function (a, b) { return b.t[x.k] > a.t[x.k] ? b : a; }), lo = ok.reduce(function (a, b) { return b.t[x.k] < a.t[x.k] ? b : a; });
         return h("li", {}, h("strong", { text: x.l + " : " }), "le plus, " + hi.name + " (" + x.f(hi.t[x.k]) + ") ; le moins, " + lo.name + " (" + x.f(lo.t[x.k]) + ")."); }
       function line(label, n, t, pr, perFc, perUsd, strong) {
         return h("tr", { class: strong ? "total" : "" }, h("th", { scope: "row", text: label }), h("td", { text: avg(t.members, n) }), h("td", { text: avg(t.visitors, n) }), h("td", { text: avg(pr, n) }),
-          h("td", { text: TT.fmtFC(perFc) }), h("td", { text: TT.fmtUSD(perUsd) }));
+          h("td", { text: TT.fmtFC(perFc) }), h("td", { text: TT.fmtUSD(perUsd) }), h("td", { text: TT.fmtFC(t.fc) }), h("td", { text: TT.fmtUSD(t.usd) }));
       }
       return h("section", { class: "card" }, h("h3", { text: "Effectifs moyens et offrandes" }),
-        h("p", { class: "hint", text: "Moyennes par activité pour les effectifs, par personne présente (membres et visiteurs) pour les offrandes. Les montants en CDF et en USD sont comparés séparément." }),
+        h("p", { class: "hint", text: "Moyennes par activité, pour les effectifs comme pour les offrandes. Les montants en CDF et en USD sont comparés séparément." }),
         h("div", { class: "scroll" }, h("table", {},
-          h("thead", {}, h("tr", {}, h("th", { text: "Communauté" }), h("th", { text: "Membres / activité" }), h("th", { text: "Visiteurs / activité" }), h("th", { text: "Présents / activité" }), h("th", { text: "Offrande / présent (CDF)" }), h("th", { text: "Offrande / présent (USD)" }))),
+          h("thead", {}, h("tr", {}, h("th", { text: "Communauté" }), h("th", { text: "Membres / activité" }), h("th", { text: "Visiteurs / activité" }), h("th", { text: "Présents / activité" }), h("th", { text: "Offrande moy. / activité (CDF)" }), h("th", { text: "Offrande moy. / activité (USD)" }), h("th", { text: "Offrandes totales (CDF)" }), h("th", { text: "Offrandes totales (USD)" }))),
           h("tbody", {}, rows.map(function (r) { return line(r.name, r.t.n, r.t, r.pr, r.perFc, r.perUsd); })),
-          h("tfoot", {}, line("District", tot.n, tot, totPr, totPr ? Math.round(tot.fc / totPr) : 0, totPr ? Math.round(tot.usd / totPr) : 0, true)))),
+          h("tfoot", {}, line("District", tot.n, tot, totPr, tot.n ? Math.round(tot.fc / tot.n) : 0, tot.n ? Math.round(tot.usd / tot.n) : 0, true)))),
         hl.length ? [h("h3", { text: "Qui offre le plus, qui offre le moins" }), h("ul", { class: "hint" }, hl)] : null);
     })();
     shell([
