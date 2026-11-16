@@ -1193,6 +1193,11 @@ main::before { display: none; }
 .form-actions .btn.ghost.form-draft { border-color: var(--navy); color: var(--navy); }
 .form-actions { gap: .45rem; }
 
+/* Barres d'offrande moyenne par activité */
+.off-bars h4 { margin: 1rem 0 .4rem; font-size: .95rem; color: var(--head-ink); }
+.reg-progress .off-fill { display: block; height: 100%; border-radius: inherit; background: var(--grad-gold); }
+.card .filters { margin: .5rem 0 .8rem; grid-template-columns: 1fr; }
+
 /* >>> MODE-SOMBRE-GENERE (tools/mode-sombre.py) — ne pas modifier à la main */
 :root[data-theme="dark"] {
     --paper: #0a0c18;

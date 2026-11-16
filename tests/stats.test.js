@@ -72,6 +72,21 @@ check("présences = membres + visiteurs (mars validé : 165)", function () {
   assert.strictEqual(S.presences(S.compute(REF, MARS_VALIDE).total), 165);
   assert.strictEqual(S.presences(null), 0);
 });
+check("moyennes par activité : membres, visiteurs, présents, offrandes (mars validé)", function () {
+  var r = S.compute(REF, MARS_VALIDE), A = S.averages(r), T = A.total;
+  assert.strictEqual(T.n, r.total.n);
+  assert.strictEqual(T.presences, 165);
+  assert.strictEqual(T.mAvg, Math.round(150 / T.n * 10) / 10);
+  assert.strictEqual(T.pAvg, Math.round(165 / T.n * 10) / 10);
+  assert.strictEqual(T.fcAvg, Math.round(16000000 / T.n));
+  assert.strictEqual(T.usdAvg, Math.round(32025 / T.n));
+  var sumN = Object.keys(A.byCommunity).reduce(function (a, k) { return a + A.byCommunity[k].n; }, 0);
+  assert.strictEqual(sumN, T.n);
+});
+check("moyennes : période vide sans division par zéro", function () {
+  var A = S.averages(S.compute(REF, { from: "2030-01-01", to: "2030-01-31", statuses: ["validated"] }));
+  assert.strictEqual(A.total.n, 0); assert.strictEqual(A.total.pAvg, 0); assert.strictEqual(A.total.fcAvg, 0);
+});
 check("mars validé : offrandes 160 000 FC et 320,25 USD (en centimes, sans arrondi)", function () {
   var t = S.compute(REF, MARS_VALIDE).total;
   assert.strictEqual(t.fc, 16000000); assert.strictEqual(t.usd, 32025);
