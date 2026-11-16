@@ -865,7 +865,13 @@
     for (var m = 1; m <= 12; m++) {
       var r = S.periodRange("month", s.year, m);
       var mRes = S.compute(D.reports, { from: r.from, to: r.to, statuses: statusSets[s.statuses], communityId: s.community || (isCommunity() ? D.profile.community_id : "") });
-      chartStats.byMonth.push({ label: TT.MONTHS[m-1], shortLabel: TT.MONTHS[m-1].substring(0,3), total: S.presences(mRes.total) });
+      // Statut du mois : validé (toutes les fiches transmises sont validées), en attente, ou aucune fiche transmise ; « à venir » après le mois en cours.
+      var scope = s.community || (isCommunity() ? D.profile.community_id : "");
+      var nT = S.compute(D.reports, { from: r.from, to: r.to, statuses: statusSets.noDraft, communityId: scope }).total.n;
+      var nV = S.compute(D.reports, { from: r.from, to: r.to, statuses: statusSets.validated, communityId: scope }).total.n;
+      var nowD = new Date(), future = (s.year > nowD.getFullYear()) || (s.year === nowD.getFullYear() && m - 1 > nowD.getMonth());
+      chartStats.byMonth.push({ label: TT.MONTHS[m-1], shortLabel: TT.MONTHS[m-1].substring(0,3), total: S.presences(mRes.total),
+        status: future && nT === 0 ? "future" : nT === 0 ? "empty" : nV >= nT ? "validated" : "pending" });
     }
     // Calendrier : activités par jour du mois affiché (le dernier mois de la période si ce n'est pas un mois)
     var almMonth = s.kind === "month" ? s.idx : s.kind === "quarter" ? s.idx * 3 : 12;
@@ -998,7 +1004,11 @@
       // --- BLOC GRAPHIQUES ---
       h("section", { class: "charts", "aria-labelledby": "charts-title", style: "margin-bottom:1.5rem;" },
         h("h2", { id: "charts-title", class: "sr-only", text: "Vues graphiques" }),
-        h("div", { class: "chart-card" }, h("h3", { text: "Évolution sur 12 mois" }), h("p", { class: "chart-sub", text: "Présences (membres et visiteurs) de l'année choisie ; le mois choisi est mis en avant." + (s.statuses === "validated" ? " Seules les fiches validées sont comptées : les mois récents paraissent bas tant que des fiches attendent leur validation." : "") }), h("div", { id: "sig-parchemin" })),
+        h("div", { class: "chart-card" }, h("h3", { text: "Évolution sur 12 mois" }), h("p", { class: "chart-sub", text: "Présences (membres et visiteurs) de l'année choisie ; le mois choisi est mis en avant." + (s.statuses === "validated" ? " Seules les fiches validées sont comptées : les mois récents paraissent bas tant que des fiches attendent leur validation." : "") }), h("div", { id: "sig-parchemin" }),
+          h("ul", { class: "sig-color-legend", "aria-label": "Légende des couleurs de la courbe" },
+            h("li", {}, h("span", { class: "sw sw-validated", "aria-hidden": "true" }), "Validé"),
+            h("li", {}, h("span", { class: "sw sw-pending", "aria-hidden": "true" }), "En attente de validation"),
+            h("li", {}, h("span", { class: "sw sw-empty", "aria-hidden": "true" }), "Aucune fiche transmise"))),
         h("div", { class: "chart-card" }, h("h3", { text: "Classement des communautés" }), h("p", { class: "chart-sub", text: "Présences (membres et visiteurs) par communauté sur la période. Touchez une ligne pour le détail." }), h("div", { id: "sig-honneur" })),
         h("div", { class: "chart-card" }, h("h3", { text: "Répartition par type d'activité" }), h("p", { class: "chart-sub", text: "Part de chaque type dans le total de la période." }), h("div", { id: "sig-roue" })),
         h("div", { class: "chart-card" }, h("h3", { text: "Calendrier du mois" }), h("p", { class: "chart-sub", text: "Activités par jour. Touchez une case pour voir le détail." }), h("div", { id: "sig-almanach" }))
@@ -1198,7 +1208,20 @@
   A.onSignedOut = function () { clearInterval(timer); D.reset(); showLogin("Votre session a expiré. Reconnectez-vous.", "bad"); };
 
   (async function boot() {
-    if ("serviceWorker" in navigator && location.protocol !== "file:") { navigator.serviceWorker.register("sw.js").catch(function () {}); }
+    if ("serviceWorker" in navigator && location.protocol !== "file:") { var hadController = !!navigator.serviceWorker.controller, reloadPending = false;
+      /* Nouvelle version : le service worker s'active seul ; on recharge dès que plus aucune saisie n'est en cours. */
+      navigator.serviceWorker.addEventListener("controllerchange", function () {
+        if (!hadController || reloadPending) return;
+        reloadPending = true;
+        (function tryReload() {
+          if (formDirty) { setTimeout(tryReload, 5000); return; }
+          TT.toast("Nouvelle version installée. Rechargement…", "good");
+          setTimeout(function () { location.reload(); }, 1200);
+        })();
+      });
+      navigator.serviceWorker.register("sw.js").then(function (reg) {
+        document.addEventListener("visibilitychange", function () { if (!document.hidden) reg.update().catch(function () {}); });
+      }).catch(function () {}); }
     var hashRes = null;
     try { hashRes = await A.consumeUrlHash(); } catch (e) { hashRes = { error: TT.friendly(e) }; }
     if (hashRes && hashRes.error) { showLogin("Lien invalide ou expiré : " + hashRes.error + " Demandez un nouveau lien.", "bad", "recover"); return; }
@@ -1287,6 +1310,7 @@ window.mountStatsCharts = function (stats) {
       values: values,
       labels: stats.byMonth.map((m) => m.shortLabel || m.label),
       year: stats.year,
+      status: stats.byMonth.map((m) => m.status),
       focus: stats.focusMonth,
       title: 'Présences mois par mois en ' + stats.year,
       desc: 'Présences par mois en ' + stats.year + ' : ' + values.map((v, i) => months[i] + ' ' + fmtN(v)).join(', ') + '.',
