@@ -391,6 +391,16 @@
           h("button", { class: "btn primary", type: "button", onclick: manualSync, text: "Envoyer maintenant" }),
           h("button", { class: "btn ghost", type: "button", onclick: function () { state.listFilter = { status: "", community: "", month: "" }; go("reports"); }, text: "Voir" }))));
     }
+    /* Rappel : brouillons de la communauté restés plus de 3 jours sans être transmis. */
+    if (isCommunity()) {
+      var limit = Date.now() - 3 * 24 * 3600 * 1000;
+      var old = rs.filter(function (r) { var t = Date.parse(r.created_at || r.activity_date); return r.status === "draft" && t && t < limit; });
+      if (old.length) blocks.push(h("section", { class: "card alert", role: "status" },
+        h("h3", { text: old.length + " brouillon(s) non transmis depuis plus de 3 jours" }),
+        h("p", { class: "muted", text: "Transmettez-les à la Commission dès que la saisie est complète." }),
+        h("div", { class: "row" },
+          h("button", { class: "btn primary", type: "button", onclick: function () { state.listFilter = { status: "draft", community: "", month: "" }; go("reports"); }, text: "Voir les brouillons" }))));
+    }
     var tiles = [];
     blocks.push(h("h3", { text: isCommunity() ? "Vos activités" : "À traiter" }));
     if (isCommunity()) tiles = [["Brouillons", count("draft")], ["À corriger", count("needs_correction")], ["Transmis", count("submitted") + count("in_control") + count("checked")], ["Validés", count("validated")]];
